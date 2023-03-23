@@ -60,6 +60,24 @@ TEST(Tf2AutowareAuto, DoTransformPoint32)
   EXPECT_NEAR(p_out.z, 27, EPS);
 }
 
+TEST(Tf2AutowareAuto, DoTransformClusters)
+{
+  const auto trans = filled_transform();
+  autoware_auto_perception_msgs::msg::PointClusters p1;
+  p1.points.resize(1);
+  p1.points[0].x = 1;
+  p1.points[0].y = 2;
+  p1.points[0].z = 3;
+
+  // doTransform
+  autoware_auto_perception_msgs::msg::PointClusters p_out;
+  tf2::doTransform(p1, p_out, trans);
+
+  EXPECT_NEAR(p_out.points[0].x, 11, EPS);
+  EXPECT_NEAR(p_out.points[0].y, 18, EPS);
+  EXPECT_NEAR(p_out.points[0].z, 27, EPS);
+}
+
 TEST(Tf2AutowareAuto, DoTransformPolygon)
 {
   const auto trans = filled_transform();
