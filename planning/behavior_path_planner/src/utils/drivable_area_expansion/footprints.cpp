@@ -16,7 +16,7 @@
 
 #include "behavior_path_planner/utils/drivable_area_expansion/parameters.hpp"
 
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <boost/assign.hpp>
 #include <boost/geometry.hpp>

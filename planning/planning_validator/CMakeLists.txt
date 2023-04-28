@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.19)
 project(planning_validator)
 
 find_package(autoware_cmake REQUIRED)
