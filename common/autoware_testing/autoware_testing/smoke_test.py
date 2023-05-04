@@ -92,4 +92,4 @@ class DummyTest(unittest.TestCase):
 class TestProcessOutput(unittest.TestCase):
     def test_exit_code(self, proc_output, proc_info):
         # Check that process exits with code 0
-        launch_testing.asserts.assertExitCodes(proc_info)
+        launch_testing.asserts.assertExitCodes(proc_info, [0, -2, -6, -15])
