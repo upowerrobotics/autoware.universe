@@ -91,5 +91,5 @@ class DummyTest(unittest.TestCase):
 @launch_testing.post_shutdown_test()
 class TestProcessOutput(unittest.TestCase):
     def test_exit_code(self, proc_output, proc_info):
-        # Check that process exits with code 0
+        # Check that process exits with code 0(success), termination request, SIGINT or SIGTERM codes
         launch_testing.asserts.assertExitCodes(proc_info, [0, -2, -6, -15])
