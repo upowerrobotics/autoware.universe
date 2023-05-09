@@ -13,3 +13,8 @@ log/
 
 # Python
 *.pyc
+
+# Clion
+cmake-build-debug
+.cmake-build-debug
+.idea
