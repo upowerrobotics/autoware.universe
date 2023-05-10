@@ -22,7 +22,12 @@
 #include <autoware_adapi_v1_msgs/srv/clear_route.hpp>
 #include <autoware_adapi_v1_msgs/srv/set_route_points.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
 
 #include <tf2/utils.h>
 #include <yaml-cpp/yaml.h>
