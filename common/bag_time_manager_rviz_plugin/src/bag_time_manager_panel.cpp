@@ -21,8 +21,6 @@
 #include <qt5/QtWidgets/QWidget>
 #include <rviz_common/display_context.hpp>
 
-#include <rclcpp/version.h>
-
 namespace rviz_plugins
 {
 BagTimeManagerPanel::BagTimeManagerPanel(QWidget * parent) : rviz_common::Panel(parent)
