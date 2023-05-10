@@ -84,6 +84,7 @@ target_include_directories(behavior_path_planner_node SYSTEM PUBLIC
 
 target_link_libraries(behavior_path_planner_node
   ${OpenCV_LIBRARIES}
+  magic_enum::magic_enum
 )
 
 rclcpp_components_register_node(behavior_path_planner_node
