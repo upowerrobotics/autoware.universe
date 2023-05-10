@@ -127,9 +127,7 @@ GyroOdometer::GyroOdometer(const rclcpp::NodeOptions & options)
   // TODO(YamatoAndo) createTimer
 }
 
-GyroOdometer::~GyroOdometer()
-{
-}
+GyroOdometer::~GyroOdometer() {}
 
 void GyroOdometer::callbackVehicleTwist(
   const geometry_msgs::msg::TwistWithCovarianceStamped::ConstSharedPtr vehicle_twist_ptr)
