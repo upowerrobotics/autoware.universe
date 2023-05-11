@@ -55,14 +55,7 @@ def generate_launch_description():
         name="container",
         package="rclcpp_components",
         executable="component_container_mt",
-        ros_arguments=["--log-level", "default_ad_api.container:=WARN"],
         composable_node_descriptions=components,
     )
-    web_server = Node(
-        namespace="default_ad_api",
-        package="default_ad_api",
-        name="web_server",
-        executable="web_server.py",
-    )
     argument = DeclareLaunchArgument("config", default_value=get_default_config())
-    return launch.LaunchDescription([argument, container, web_server])
+    return launch.LaunchDescription([argument, container])
