@@ -21,22 +21,23 @@ from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode
 from launch_ros.parameter_descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
+import os
+from ament_index_python.packages import get_package_share_directory
+import yaml
 
 
 def create_api_node(node_name, class_name, **kwargs):
+    config_file = os.path.join(get_package_share_directory("default_ad_api"), "config", "default_ad_api.param.yaml")
+    with open(config_file, 'r') as file:
+        config_params = yaml.safe_load(file)["/**"]["ros__parameters"]
+
     return ComposableNode(
         namespace="default_ad_api/node",
         name=node_name,
         package="default_ad_api",
         plugin="default_ad_api::" + class_name,
-        parameters=[ParameterFile(LaunchConfiguration("config"))],
+        parameters=[config_params],
     )
-
-
-def get_default_config():
-    path = FindPackageShare("default_ad_api")
-    path = PathJoinSubstitution([path, "config/default_ad_api.param.yaml"])
-    return path
 
 
 def generate_launch_description():
@@ -57,5 +58,4 @@ def generate_launch_description():
         executable="component_container_mt",
         composable_node_descriptions=components,
     )
-    argument = DeclareLaunchArgument("config", default_value=get_default_config())
-    return launch.LaunchDescription([argument, container])
+    return launch.LaunchDescription([container])
