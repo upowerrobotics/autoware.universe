@@ -20,14 +20,6 @@
     <include file="$(find-pkg-share ad_api_adaptors)/launch/rviz_adaptors.launch.xml" if="$(var launch_rviz_adaptors)"/>
   </group>
 
-  <!-- RTC controller -->
-  <group>
-    <push-ros-namespace namespace="autoware_api/external/rtc_controller"/>
-    <node_container pkg="rclcpp_components" exec="component_container_mt" name="container" namespace="" ros_args="--log-level autoware_api.external.rtc_controller.container:=warn">
-      <composable_node pkg="autoware_iv_external_api_adaptor" plugin="external_api::RTCController" name="node"/>
-    </node_container>
-  </group>
-
   <!-- rosbridge -->
   <group if="$(var rosbridge_enabled)">
     <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml">
