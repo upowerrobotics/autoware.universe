@@ -37,16 +37,16 @@ ament_auto_add_library(mu_successive_shortest_path SHARED
   src/data_association/mu_successive_shortest_path/mu_successive_shortest_path_wrapper.cpp
 )
 
-ament_auto_add_library(multi_object_tracker_node SHARED
+ament_auto_add_library(multi_object_tracker_core_node SHARED
   ${MULTI_OBJECT_TRACKER_SRC}
 )
 
-target_link_libraries(multi_object_tracker_node
+target_link_libraries(multi_object_tracker_core_node
   mu_successive_shortest_path
   Eigen3::Eigen
 )
 
-rclcpp_components_register_node(multi_object_tracker_node
+rclcpp_components_register_node(multi_object_tracker_core_node
   PLUGIN "MultiObjectTracker"
   EXECUTABLE multi_object_tracker
 )
