@@ -45,7 +45,6 @@ using MarkerArray = visualization_msgs::msg::MarkerArray;
 using ClearRoute = planning_interface::ClearRoute;
 using SetRoutePoints = planning_interface::SetRoutePoints;
 using SetRoute = planning_interface::SetRoute;
-using ChangeRoutePoints = planning_interface::ChangeRoutePoints;
 using ChangeRoute = planning_interface::ChangeRoute;
 using Route = planning_interface::Route;
 using RouteState = planning_interface::RouteState;
@@ -82,7 +81,6 @@ private:
   component_interface_utils::Service<SetRoute>::SharedPtr srv_set_route_;
   component_interface_utils::Service<SetRoutePoints>::SharedPtr srv_set_route_points_;
   component_interface_utils::Service<ChangeRoute>::SharedPtr srv_change_route_;
-  component_interface_utils::Service<ChangeRoutePoints>::SharedPtr srv_change_route_points_;
   void on_clear_route(
     const ClearRoute::Service::Request::SharedPtr req,
     const ClearRoute::Service::Response::SharedPtr res);

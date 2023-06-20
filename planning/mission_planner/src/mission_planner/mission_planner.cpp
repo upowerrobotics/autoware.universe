@@ -94,7 +94,6 @@ MissionPlanner::MissionPlanner(const rclcpp::NodeOptions & options)
   adaptor.init_srv(srv_set_route_, this, &MissionPlanner::on_set_route);
   adaptor.init_srv(srv_set_route_points_, this, &MissionPlanner::on_set_route_points);
   adaptor.init_srv(srv_change_route_, this, &MissionPlanner::on_change_route);
-  adaptor.init_srv(srv_change_route_points_, this, &MissionPlanner::on_change_route_points);
   adaptor.init_sub(sub_modified_goal_, this, &MissionPlanner::on_modified_goal);
 
   change_state(RouteState::Message::UNSET);
