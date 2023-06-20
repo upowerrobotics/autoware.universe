@@ -32,7 +32,7 @@ inline bool contains_lanelet(const lanelet::ConstLanelets & lanelets, const lane
   return std::find_if(lanelets.begin(), lanelets.end(), [&](const auto & l) {
            return l.id() == id;
          }) != lanelets.end();
-};
+}
 /// @brief calculate lanelets that should be ignored
 /// @param [in] ego_data data about the ego vehicle
 /// @param [in] path_lanelets lanelets driven by the ego vehicle

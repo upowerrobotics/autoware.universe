@@ -35,7 +35,13 @@
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include "std_msgs/msg/multi_array_dimension.hpp"
 #include "std_msgs/msg/string.hpp"
+
+#ifdef ROS_DISTRO_GALACTIC
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#else
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#endif
+
 #include "tier4_debug_msgs/msg/float32_multi_array_stamped.hpp"
 #include "tier4_debug_msgs/msg/float32_stamped.hpp"
 #include "tier4_external_api_msgs/msg/calibration_status.hpp"

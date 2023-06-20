@@ -48,15 +48,22 @@ void detail::FakeNodeCore::set_up(const std::string & test_name)
   ASSERT_FALSE(rclcpp::ok());
   rclcpp::init(kArgc, nullptr);
   ASSERT_TRUE(rclcpp::ok());
-  m_fake_node = std::make_shared<rclcpp::Node>("FakeNodeForTest_" + sanitize_test_name(test_name));
+  m_fake_node = std::make_shared<rclcpp::Node>(
+    "FakeNodeForTest_" + sanitize_test_name(test_name),
+    m_namespace,
+    // remapping so that tf and tf_static correctly use the node namespace
+    rclcpp::NodeOptions().arguments(
+      {
+        "--ros-args",
+        "-r",
+        "/tf:=tf",
+        "-r",
+        "/tf_static:=tf_static"}));
   m_tf_listener =
     std::make_shared<tf2_ros::TransformListener>(m_tf_buffer, m_fake_node, kSpinThread);
 }
 
-void detail::FakeNodeCore::tear_down()
-{
-  (void)rclcpp::shutdown();
-}
+void detail::FakeNodeCore::tear_down() { (void)rclcpp::shutdown(); }
 
 std::string detail::get_test_name(const ::testing::TestInfo * info)
 {
@@ -71,10 +78,7 @@ void FakeTestNode::SetUp()
   set_up(detail::get_test_name(::testing::UnitTest::GetInstance()->current_test_info()));
 }
 
-void FakeTestNode::TearDown()
-{
-  tear_down();
-}
+void FakeTestNode::TearDown() { tear_down(); }
 
 }  // namespace testing
 }  // namespace tools

@@ -42,11 +42,9 @@ using PoseStamped = geometry_msgs::msg::PoseStamped;
 using PoseWithUuidStamped = autoware_planning_msgs::msg::PoseWithUuidStamped;
 using LaneletRoute = autoware_planning_msgs::msg::LaneletRoute;
 using MarkerArray = visualization_msgs::msg::MarkerArray;
-using ClearRoute = planning_interface::ClearRoute;
 using SetRoutePoints = planning_interface::SetRoutePoints;
 using SetRoute = planning_interface::SetRoute;
-using ChangeRoutePoints = planning_interface::ChangeRoutePoints;
-using ChangeRoute = planning_interface::ChangeRoute;
+using ClearRoute = planning_interface::ClearRoute;
 using Route = planning_interface::Route;
 using RouteState = planning_interface::RouteState;
 using Odometry = nav_msgs::msg::Odometry;
@@ -81,8 +79,6 @@ private:
   component_interface_utils::Service<ClearRoute>::SharedPtr srv_clear_route_;
   component_interface_utils::Service<SetRoute>::SharedPtr srv_set_route_;
   component_interface_utils::Service<SetRoutePoints>::SharedPtr srv_set_route_points_;
-  component_interface_utils::Service<ChangeRoute>::SharedPtr srv_change_route_;
-  component_interface_utils::Service<ChangeRoutePoints>::SharedPtr srv_change_route_points_;
   void on_clear_route(
     const ClearRoute::Service::Request::SharedPtr req,
     const ClearRoute::Service::Response::SharedPtr res);

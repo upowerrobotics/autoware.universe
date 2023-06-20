@@ -168,17 +168,14 @@ public:
   inline void addMapCellAndFilter(
     const autoware_map_msgs::msg::PointCloudMapCellWithID & map_cell_to_add)
   {
-    pcl::PointCloud<pcl::PointXYZ> map_cell_pc_tmp;
-    pcl::fromROSMsg(map_cell_to_add.pointcloud, map_cell_pc_tmp);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr map_cell_pc_tmp(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::fromROSMsg(map_cell_to_add.pointcloud, *map_cell_pc_tmp);
 
     MultiVoxelGrid map_cell_voxel_grid_tmp;
     PointCloudPtr map_cell_downsampled_pc_ptr_tmp;
 
-    auto map_cell_voxel_input_tmp_ptr =
-      std::make_shared<pcl::PointCloud<pcl::PointXYZ>>(map_cell_pc_tmp);
     map_cell_voxel_grid_tmp.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
     map_cell_downsampled_pc_ptr_tmp.reset(new pcl::PointCloud<pcl::PointXYZ>);
-    map_cell_voxel_grid_tmp.setInputCloud(map_cell_voxel_input_tmp_ptr);
     map_cell_voxel_grid_tmp.setSaveLeafLayout(true);
     map_cell_voxel_grid_tmp.filter(*map_cell_downsampled_pc_ptr_tmp);
 
