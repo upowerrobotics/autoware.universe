@@ -49,7 +49,7 @@ void EuclideanClusterNode::onPointCloud(
   // clustering
   std::vector<pcl::PointCloud<pcl::PointXYZ>> clusters;
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects = cluster_->cluster(raw_pointcloud_ptr, clusters);
-  detected_objects.header.frame_id = "base_link";
+  detected_objects.header.frame_id = input_msg->header.frame_id;
   detected_objects.header.stamp = input_msg->header.stamp;
 
 
