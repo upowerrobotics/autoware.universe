@@ -16,6 +16,9 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <autoware_auto_perception_msgs/msg/detected_object.hpp>
+#include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
@@ -37,7 +40,7 @@ public:
   void setUseHeight(bool use_height) { use_height_ = use_height; }
   void setMinClusterSize(int size) { min_cluster_size_ = size; }
   void setMaxClusterSize(int size) { max_cluster_size_ = size; }
-  virtual bool cluster(
+  virtual autoware_auto_perception_msgs::msg::DetectedObjects cluster(
     const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
     std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters) = 0;
 

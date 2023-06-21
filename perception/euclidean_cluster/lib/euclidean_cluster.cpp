@@ -34,7 +34,7 @@ EuclideanCluster::EuclideanCluster(
 {
 }
 
-bool EuclideanCluster::cluster(
+autoware_auto_perception_msgs::msg::DetectedObjects EuclideanCluster::cluster(
   const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
   std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters)
 {
