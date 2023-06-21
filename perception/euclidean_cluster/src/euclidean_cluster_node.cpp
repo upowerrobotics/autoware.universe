@@ -30,6 +30,9 @@ EuclideanClusterNode::EuclideanClusterNode(const rclcpp::NodeOptions & options)
   cluster_ =
     std::make_shared<EuclideanCluster>(use_height, min_cluster_size, max_cluster_size, tolerance);
 
+  detected_objects_pub_ = this->create_publisher<autoware_auto_perception_msgs::msg::DetectedObjects>(
+    "detected_objects_universe", rclcpp::QoS{1});
+
   using std::placeholders::_1;
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
     "input", rclcpp::SensorDataQoS().keep_last(1),
@@ -46,6 +49,11 @@ void EuclideanClusterNode::onPointCloud(
   // clustering
   std::vector<pcl::PointCloud<pcl::PointXYZ>> clusters;
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects = cluster_->cluster(raw_pointcloud_ptr, clusters);
+  detected_objects.header.frame_id = "base_link";
+  detected_objects.header.stamp = input_msg->header.stamp;
+
+
+
   detected_objects_pub_->publish(detected_objects);
 
 }
