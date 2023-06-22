@@ -24,9 +24,9 @@ EuclideanClusterNode::EuclideanClusterNode(const rclcpp::NodeOptions & options)
 : Node("euclidean_cluster_node", options)
 {
   const bool use_height = this->declare_parameter("use_height", false);
-  const int min_cluster_size = this->declare_parameter("min_cluster_size", 100);
+  const int min_cluster_size = this->declare_parameter("min_cluster_size", 25);
   const int max_cluster_size = this->declare_parameter("max_cluster_size", 15000);
-  const float tolerance = this->declare_parameter("tolerance", 0.1);
+  const float tolerance = this->declare_parameter("tolerance", 0.05);
   cluster_ =
     std::make_shared<EuclideanCluster>(use_height, min_cluster_size, max_cluster_size, tolerance);
 
@@ -53,7 +53,6 @@ void EuclideanClusterNode::onPointCloud(
   detected_objects_ptr->header.frame_id = input_msg->header.frame_id;
   detected_objects_ptr->header.stamp = input_msg->header.stamp;
   detected_objects_pub_->publish(*detected_objects_ptr);
-
 }
 
 }  // namespace euclidean_cluster
