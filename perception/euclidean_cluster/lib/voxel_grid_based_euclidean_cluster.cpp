@@ -162,7 +162,7 @@ autoware_auto_perception_msgs::msg::DetectedObjects VoxelGridBasedEuclideanClust
       obj.shape.dimensions.x = dimensions.x();
       obj.shape.dimensions.y = dimensions.y();
 
-      objs.objects.push_back(obj);
+      objs.objects.emplace_back(obj);
 
       clusters.push_back(*cloud_cluster);
       clusters.back().width = cloud_cluster->points.size();
