@@ -38,7 +38,7 @@ EuclideanCluster::EuclideanCluster(
 {
 }
 
-autoware_auto_perception_msgs::msg::DetectedObjects EuclideanCluster::cluster(
+std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCluster::cluster(
   const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
   std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters)
 {
@@ -73,7 +73,8 @@ autoware_auto_perception_msgs::msg::DetectedObjects EuclideanCluster::cluster(
   pcl_euclidean_cluster.extract(cluster_indices);
 
   // define the autoware detected objects messages to be published
-  autoware_auto_perception_msgs::msg::DetectedObjects objs;
+  std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> objs_ptr = 
+  std::make_shared<autoware_auto_perception_msgs::msg::DetectedObjects>();
 
   // build output
   {
@@ -130,7 +131,7 @@ autoware_auto_perception_msgs::msg::DetectedObjects EuclideanCluster::cluster(
         obj.shape.dimensions.x = dimensions.x();
         obj.shape.dimensions.y = dimensions.y();
 
-        objs.objects.emplace_back(obj);
+        objs_ptr->objects.emplace_back(obj);
 
         clusters.push_back(*cloud_cluster);
         clusters.back().width = cloud_cluster->points.size();
@@ -139,7 +140,7 @@ autoware_auto_perception_msgs::msg::DetectedObjects EuclideanCluster::cluster(
       }
     }
   }
-  return objs;
+  return objs_ptr;
 }
 
 }  // namespace euclidean_cluster

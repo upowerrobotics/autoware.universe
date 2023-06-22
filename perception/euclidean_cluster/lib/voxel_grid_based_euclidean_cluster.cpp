@@ -45,7 +45,7 @@ VoxelGridBasedEuclideanCluster::VoxelGridBasedEuclideanCluster(
 {
 }
 
-autoware_auto_perception_msgs::msg::DetectedObjects VoxelGridBasedEuclideanCluster::cluster(
+std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> VoxelGridBasedEuclideanCluster::cluster(
   const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
   std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters)
 {
@@ -104,7 +104,8 @@ autoware_auto_perception_msgs::msg::DetectedObjects VoxelGridBasedEuclideanClust
   }
 
   // define the autoware detected objects messages to be published
-  autoware_auto_perception_msgs::msg::DetectedObjects objs;
+  std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> objs_ptr = 
+  std::make_shared<autoware_auto_perception_msgs::msg::DetectedObjects>();
 
   // build output and check cluster size
   {
@@ -162,7 +163,7 @@ autoware_auto_perception_msgs::msg::DetectedObjects VoxelGridBasedEuclideanClust
       obj.shape.dimensions.x = dimensions.x();
       obj.shape.dimensions.y = dimensions.y();
 
-      objs.objects.emplace_back(obj);
+      objs_ptr->objects.emplace_back(obj);
 
       clusters.push_back(*cloud_cluster);
       clusters.back().width = cloud_cluster->points.size();
@@ -171,7 +172,7 @@ autoware_auto_perception_msgs::msg::DetectedObjects VoxelGridBasedEuclideanClust
     }
   }
 
-  return objs;
+  return objs_ptr;
 }
 
 }  // namespace euclidean_cluster

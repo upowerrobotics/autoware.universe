@@ -32,7 +32,7 @@ public:
   VoxelGridBasedEuclideanCluster(
     bool use_height, int min_cluster_size, int max_cluster_size, float tolerance,
     float voxel_leaf_size, int min_points_number_per_voxel);
-  autoware_auto_perception_msgs::msg::DetectedObjects cluster(
+  std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> cluster(
     const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
     std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters) override;
   void setVoxelLeafSize(float voxel_leaf_size) { voxel_leaf_size_ = voxel_leaf_size; }

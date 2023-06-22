@@ -48,13 +48,11 @@ void EuclideanClusterNode::onPointCloud(
 
   // clustering
   std::vector<pcl::PointCloud<pcl::PointXYZ>> clusters;
-  autoware_auto_perception_msgs::msg::DetectedObjects detected_objects = cluster_->cluster(raw_pointcloud_ptr, clusters);
-  detected_objects.header.frame_id = input_msg->header.frame_id;
-  detected_objects.header.stamp = input_msg->header.stamp;
 
-
-
-  detected_objects_pub_->publish(detected_objects);
+  std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> detected_objects_ptr = cluster_->cluster(raw_pointcloud_ptr, clusters);
+  detected_objects_ptr->header.frame_id = input_msg->header.frame_id;
+  detected_objects_ptr->header.stamp = input_msg->header.stamp;
+  detected_objects_pub_->publish(*detected_objects_ptr);
 
 }
 
