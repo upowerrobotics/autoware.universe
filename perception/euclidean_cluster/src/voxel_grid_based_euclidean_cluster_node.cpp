@@ -25,8 +25,8 @@ VoxelGridBasedEuclideanClusterNode::VoxelGridBasedEuclideanClusterNode(
 : Node("voxel_grid_based_euclidean_cluster_node", options)
 {
   const bool use_height = this->declare_parameter("use_height", false);
-  const int min_cluster_size = this->declare_parameter("min_cluster_size", 1);
-  const int max_cluster_size = this->declare_parameter("max_cluster_size", 500);
+  const int min_cluster_size = this->declare_parameter("min_cluster_size", 10);
+  const int max_cluster_size = this->declare_parameter("max_cluster_size", 15000);
   const float tolerance = this->declare_parameter("tolerance", 1.0);
   const float voxel_leaf_size = this->declare_parameter("voxel_leaf_size", 0.5);
   const int min_points_number_per_voxel = this->declare_parameter("min_points_number_per_voxel", 3);

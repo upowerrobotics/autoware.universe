@@ -105,7 +105,6 @@ autoware_auto_perception_msgs::msg::DetectedObjects EuclideanCluster::cluster(
         obj.kinematics.pose_with_covariance.pose.position.y = center_y;
         obj.kinematics.pose_with_covariance.pose.position.z = center_z;
 
-        // obj.kinematics.pose_with_covariance.pose.orientation = tf2::toMsg(q);
         obj.kinematics.has_position_covariance = false;
         obj.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
         obj.kinematics.has_twist = false;
