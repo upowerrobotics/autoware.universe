@@ -125,7 +125,7 @@ autoware_auto_perception_msgs::msg::DetectedObjects EuclideanCluster::cluster(
         obj.shape.footprint.points[3].x = -dimensions.x() / 2.0f;
         obj.shape.footprint.points[3].y = dimensions.y() / 2.0f;
         obj.shape.footprint.points[3].z = 0.0f;
-        
+
         obj.shape.dimensions.z = dimensions.z();
         obj.shape.dimensions.x = dimensions.x();
         obj.shape.dimensions.y = dimensions.y();

@@ -147,18 +147,18 @@ autoware_auto_perception_msgs::msg::DetectedObjects VoxelGridBasedEuclideanClust
       obj.shape.footprint.points.resize(4);
       obj.shape.footprint.points[0].x = dimensions.x() / 2.0f;
       obj.shape.footprint.points[0].y = dimensions.y() / 2.0f;
-      obj.shape.footprint.points[0].z = 0.0f;
+      obj.shape.footprint.points[0].z = -5.0f;
       obj.shape.footprint.points[1].x = dimensions.x() / 2.0f;
       obj.shape.footprint.points[1].y = -dimensions.y() / 2.0f;
-      obj.shape.footprint.points[1].z = 0.0f;
+      obj.shape.footprint.points[1].z = -5.0f;
       obj.shape.footprint.points[2].x = -dimensions.x() / 2.0f;
       obj.shape.footprint.points[2].y = -dimensions.y() / 2.0f;
-      obj.shape.footprint.points[2].z = 0.0f;
+      obj.shape.footprint.points[2].z = -5.0f;
       obj.shape.footprint.points[3].x = -dimensions.x() / 2.0f;
       obj.shape.footprint.points[3].y = dimensions.y() / 2.0f;
-      obj.shape.footprint.points[3].z = 0.0f;
-      
-      obj.shape.dimensions.z = dimensions.z();
+      obj.shape.footprint.points[3].z = -5.0f;
+
+      obj.shape.dimensions.z = dimensions.z() / 10;
       obj.shape.dimensions.x = dimensions.x();
       obj.shape.dimensions.y = dimensions.y();
 
