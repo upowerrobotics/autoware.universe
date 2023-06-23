@@ -96,6 +96,13 @@ std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCl
       float center_y = centroid.y();
       float center_z = centroid.z();
 
+      if (dimensions.z() > 5.0f || dimensions.z() < 1.0f
+      || dimensions.x() > 20.0f || dimensions.y() > 20.0f
+      || center_z > 3.0f || center_x < -20.0f || center_x > 20.0f
+      || center_y < -20.0f || center_y > 20.0f ||
+      dimensions.x() * dimensions.y() / dimensions.z() > 10.0f)
+        continue;
+
       autoware_auto_perception_msgs::msg::DetectedObject obj;
       obj.kinematics.pose_with_covariance.pose.position.x = center_x;
       obj.kinematics.pose_with_covariance.pose.position.y = center_y;
@@ -128,7 +135,7 @@ std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCl
 
       objs_ptr->objects.emplace_back(obj);
 
-      clusters.push_back(*cloud_cluster);
+      clusters.emplace_back(*cloud_cluster);
       clusters.back().width = cloud_cluster->points.size();
       clusters.back().height = 1;
       clusters.back().is_dense = false;
