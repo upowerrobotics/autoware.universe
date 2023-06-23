@@ -46,8 +46,7 @@ VoxelGridBasedEuclideanCluster::VoxelGridBasedEuclideanCluster(
 }
 
 std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> VoxelGridBasedEuclideanCluster::cluster(
-  const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
-  std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters)
+  const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud)
 {
   // TODO(Saito) implement use_height is false version
 
@@ -164,11 +163,6 @@ std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> VoxelGridBa
       obj.shape.dimensions.y = dimensions.y();
 
       objs_ptr->objects.emplace_back(obj);
-
-      clusters.push_back(*cloud_cluster);
-      clusters.back().width = cloud_cluster->points.size();
-      clusters.back().height = 1;
-      clusters.back().is_dense = false;
     }
   }
 

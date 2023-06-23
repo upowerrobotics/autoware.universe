@@ -39,8 +39,7 @@ EuclideanCluster::EuclideanCluster(
 }
 
 std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCluster::cluster(
-  const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
-  std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters)
+  const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud)
 {
   // convert 2d pointcloud
   pcl::PointCloud<pcl::PointXYZ>::ConstPtr pointcloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
@@ -134,11 +133,6 @@ std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCl
       obj.shape.dimensions.y = dimensions.y();
 
       objs_ptr->objects.emplace_back(obj);
-
-      clusters.emplace_back(*cloud_cluster);
-      clusters.back().width = cloud_cluster->points.size();
-      clusters.back().height = 1;
-      clusters.back().is_dense = false;
     }
   }
   return objs_ptr;

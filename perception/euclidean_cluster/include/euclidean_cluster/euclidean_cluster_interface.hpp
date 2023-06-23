@@ -41,8 +41,7 @@ public:
   void setMinClusterSize(int size) { min_cluster_size_ = size; }
   void setMaxClusterSize(int size) { max_cluster_size_ = size; }
   virtual std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> cluster(
-    const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
-    std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters) = 0;
+    const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud) = 0;
 
 protected:
   bool use_height_ = true;
