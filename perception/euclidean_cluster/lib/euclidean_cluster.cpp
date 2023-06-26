@@ -102,37 +102,39 @@ std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCl
       dimensions.x() * dimensions.y() / dimensions.z() > 10.0f)
         continue;
 
-      autoware_auto_perception_msgs::msg::DetectedObject obj;
-      obj.kinematics.pose_with_covariance.pose.position.x = center_x;
-      obj.kinematics.pose_with_covariance.pose.position.y = center_y;
-      obj.kinematics.pose_with_covariance.pose.position.z = center_z;
+      // autoware_auto_perception_msgs::msg::DetectedObject obj;
+      std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObject> obj_ptr = 
+      std::make_shared<autoware_auto_perception_msgs::msg::DetectedObject>();
+      obj_ptr->kinematics.pose_with_covariance.pose.position.x = center_x;
+      obj_ptr->kinematics.pose_with_covariance.pose.position.y = center_y;
+      obj_ptr->kinematics.pose_with_covariance.pose.position.z = center_z;
 
-      obj.kinematics.has_position_covariance = false;
-      obj.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
-      obj.kinematics.has_twist = false;
-      obj.kinematics.has_twist_covariance = false;
+      obj_ptr->kinematics.has_position_covariance = false;
+      obj_ptr->kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+      obj_ptr->kinematics.has_twist = false;
+      obj_ptr->kinematics.has_twist_covariance = false;
 
       // Fill in the Polygon of the Object
-      obj.shape.type = autoware_auto_perception_msgs::msg::Shape::POLYGON;
-      obj.shape.footprint.points.resize(4);
-      obj.shape.footprint.points[0].x = dimensions.x() / 2.0f;
-      obj.shape.footprint.points[0].y = dimensions.y() / 2.0f;
-      obj.shape.footprint.points[0].z = 0.0f;
-      obj.shape.footprint.points[1].x = dimensions.x() / 2.0f;
-      obj.shape.footprint.points[1].y = -dimensions.y() / 2.0f;
-      obj.shape.footprint.points[1].z = 0.0f;
-      obj.shape.footprint.points[2].x = -dimensions.x() / 2.0f;
-      obj.shape.footprint.points[2].y = -dimensions.y() / 2.0f;
-      obj.shape.footprint.points[2].z = 0.0f;
-      obj.shape.footprint.points[3].x = -dimensions.x() / 2.0f;
-      obj.shape.footprint.points[3].y = dimensions.y() / 2.0f;
-      obj.shape.footprint.points[3].z = 0.0f;
+      obj_ptr->shape.type = autoware_auto_perception_msgs::msg::Shape::POLYGON;
+      obj_ptr->shape.footprint.points.resize(4);
+      obj_ptr->shape.footprint.points[0].x = dimensions.x() / 2.0f;
+      obj_ptr->shape.footprint.points[0].y = dimensions.y() / 2.0f;
+      obj_ptr->shape.footprint.points[0].z = 0.0f;
+      obj_ptr->shape.footprint.points[1].x = dimensions.x() / 2.0f;
+      obj_ptr->shape.footprint.points[1].y = -dimensions.y() / 2.0f;
+      obj_ptr->shape.footprint.points[1].z = 0.0f;
+      obj_ptr->shape.footprint.points[2].x = -dimensions.x() / 2.0f;
+      obj_ptr->shape.footprint.points[2].y = -dimensions.y() / 2.0f;
+      obj_ptr->shape.footprint.points[2].z = 0.0f;
+      obj_ptr->shape.footprint.points[3].x = -dimensions.x() / 2.0f;
+      obj_ptr->shape.footprint.points[3].y = dimensions.y() / 2.0f;
+      obj_ptr->shape.footprint.points[3].z = 0.0f;
 
-      obj.shape.dimensions.z = dimensions.z();
-      obj.shape.dimensions.x = dimensions.x();
-      obj.shape.dimensions.y = dimensions.y();
+      obj_ptr->shape.dimensions.z = dimensions.z();
+      obj_ptr->shape.dimensions.x = dimensions.x();
+      obj_ptr->shape.dimensions.y = dimensions.y();
 
-      objs_ptr->objects.emplace_back(obj);
+      objs_ptr->objects.emplace_back(*obj_ptr);
     }
   }
   return objs_ptr;
