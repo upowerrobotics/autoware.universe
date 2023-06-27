@@ -18,6 +18,9 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tier4_perception_msgs/msg/detected_objects_with_feature.hpp>
 
+#include <autoware_auto_perception_msgs/msg/detected_object.hpp>
+#include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -34,4 +37,8 @@ void convertPointCloudClusters2Msg(
 void convertObjectMsg2SensorMsg(
   const tier4_perception_msgs::msg::DetectedObjectsWithFeature & input,
   sensor_msgs::msg::PointCloud2 & output);
+void convertPointCloudClusters2DetectedObjects(
+  const std_msgs::msg::Header & header,
+  const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
+  autoware_auto_perception_msgs::msg::DetectedObjects & msg);
 }  // namespace euclidean_cluster
