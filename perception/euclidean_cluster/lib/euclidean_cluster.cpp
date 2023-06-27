@@ -17,10 +17,6 @@
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
 
-#include <pcl/point_types.h>
-#include <pcl/common/common.h>
-#include <pcl/common/centroid.h>
-
 namespace euclidean_cluster
 {
 EuclideanCluster::EuclideanCluster()
@@ -38,8 +34,9 @@ EuclideanCluster::EuclideanCluster(
 {
 }
 
-std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCluster::cluster(
-  const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud)
+bool EuclideanCluster::cluster(
+  const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
+  std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters)
 {
   // convert 2d pointcloud
   pcl::PointCloud<pcl::PointXYZ>::ConstPtr pointcloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
@@ -71,10 +68,6 @@ std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCl
   pcl_euclidean_cluster.setInputCloud(pointcloud_ptr);
   pcl_euclidean_cluster.extract(cluster_indices);
 
-  // define the autoware detected objects messages to be published
-  std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> objs_ptr = 
-  std::make_shared<autoware_auto_perception_msgs::msg::DetectedObjects>();
-
   // build output
   {
     for (const auto & cluster : cluster_indices) {
@@ -82,62 +75,13 @@ std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObjects> EuclideanCl
       for (const auto & point_idx : cluster.indices) {
         cloud_cluster->points.push_back(pointcloud->points[point_idx]);
       }
-
-      Eigen::Vector4f min_pt, max_pt;
-      Eigen::Vector4f centroid;
-      pcl::getMinMax3D(*cloud_cluster, min_pt, max_pt);
-
-      pcl::compute3DCentroid(*cloud_cluster, centroid);
-
-      Eigen::Vector3f dimensions = max_pt.head<3>() - min_pt.head<3>();
-
-      float center_x = centroid.x();
-      float center_y = centroid.y();
-      float center_z = centroid.z();
-
-      if (dimensions.z() > 5.0f || dimensions.z() < 1.0f
-      || dimensions.x() > 20.0f || dimensions.y() > 20.0f
-      || center_z > 3.0f || center_x < -20.0f || center_x > 20.0f
-      || center_y < -20.0f || center_y > 20.0f ||
-      dimensions.x() * dimensions.y() / dimensions.z() > 10.0f)
-        continue;
-
-      // autoware_auto_perception_msgs::msg::DetectedObject obj;
-      std::shared_ptr<autoware_auto_perception_msgs::msg::DetectedObject> obj_ptr = 
-      std::make_shared<autoware_auto_perception_msgs::msg::DetectedObject>();
-      obj_ptr->kinematics.pose_with_covariance.pose.position.x = center_x;
-      obj_ptr->kinematics.pose_with_covariance.pose.position.y = center_y;
-      obj_ptr->kinematics.pose_with_covariance.pose.position.z = center_z;
-
-      obj_ptr->kinematics.has_position_covariance = false;
-      obj_ptr->kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
-      obj_ptr->kinematics.has_twist = false;
-      obj_ptr->kinematics.has_twist_covariance = false;
-
-      // Fill in the Polygon of the Object
-      obj_ptr->shape.type = autoware_auto_perception_msgs::msg::Shape::POLYGON;
-      obj_ptr->shape.footprint.points.resize(4);
-      obj_ptr->shape.footprint.points[0].x = dimensions.x() / 2.0f;
-      obj_ptr->shape.footprint.points[0].y = dimensions.y() / 2.0f;
-      obj_ptr->shape.footprint.points[0].z = 0.0f;
-      obj_ptr->shape.footprint.points[1].x = dimensions.x() / 2.0f;
-      obj_ptr->shape.footprint.points[1].y = -dimensions.y() / 2.0f;
-      obj_ptr->shape.footprint.points[1].z = 0.0f;
-      obj_ptr->shape.footprint.points[2].x = -dimensions.x() / 2.0f;
-      obj_ptr->shape.footprint.points[2].y = -dimensions.y() / 2.0f;
-      obj_ptr->shape.footprint.points[2].z = 0.0f;
-      obj_ptr->shape.footprint.points[3].x = -dimensions.x() / 2.0f;
-      obj_ptr->shape.footprint.points[3].y = dimensions.y() / 2.0f;
-      obj_ptr->shape.footprint.points[3].z = 0.0f;
-
-      obj_ptr->shape.dimensions.z = dimensions.z();
-      obj_ptr->shape.dimensions.x = dimensions.x();
-      obj_ptr->shape.dimensions.y = dimensions.y();
-
-      objs_ptr->objects.emplace_back(*obj_ptr);
+      clusters.push_back(*cloud_cluster);
+      clusters.back().width = cloud_cluster->points.size();
+      clusters.back().height = 1;
+      clusters.back().is_dense = false;
     }
   }
-  return objs_ptr;
+  return true;
 }
 
 }  // namespace euclidean_cluster
