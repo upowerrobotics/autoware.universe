@@ -118,6 +118,43 @@ void convertPointCloudClusters2DetectedObjects(
   autoware_auto_perception_msgs::msg::DetectedObjects & msg)
 {
   msg.header = header;
-  (void)clusters;
+  for (const auto & cluster : clusters) {
+    sensor_msgs::msg::PointCloud2 ros_pointcloud;
+    autoware_auto_perception_msgs::msg::DetectedObject detected_object;
+    pcl::toROSMsg(cluster, ros_pointcloud);
+    ros_pointcloud.header = header;
+    detected_object.kinematics.pose_with_covariance.pose.position =
+      getCentroid(ros_pointcloud);
+    // find out the dimension of the bounding box
+    Eigen::Vector4f min_pt, max_pt;
+    pcl::getMinMax3D(cluster, min_pt, max_pt);
+    Eigen::Vector3f dimensions = max_pt.head<3>() - min_pt.head<3>();
+
+    detected_object.kinematics.has_position_covariance = false;
+    detected_object.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+    detected_object.kinematics.has_twist = false;
+    detected_object.kinematics.has_twist_covariance = false;
+
+    // Fill in the Polygon of the Object
+    detected_object.shape.type = autoware_auto_perception_msgs::msg::Shape::POLYGON;
+    detected_object.shape.footprint.points.resize(4);
+    detected_object.shape.footprint.points[0].x = dimensions.x() / 2.0f;
+    detected_object.shape.footprint.points[0].y = dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[0].z = 0.0f;
+    detected_object.shape.footprint.points[1].x = dimensions.x() / 2.0f;
+    detected_object.shape.footprint.points[1].y = -dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[1].z = 0.0f;
+    detected_object.shape.footprint.points[2].x = -dimensions.x() / 2.0f;
+    detected_object.shape.footprint.points[2].y = -dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[2].z = 0.0f;
+    detected_object.shape.footprint.points[3].x = -dimensions.x() / 2.0f;
+    detected_object.shape.footprint.points[3].y = dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[3].z = 0.0f;
+    detected_object.shape.dimensions.z = dimensions.z();
+    detected_object.shape.dimensions.x = dimensions.x();
+    detected_object.shape.dimensions.y = dimensions.y();
+    // add the detected object to detected objects message
+    msg.objects.emplace_back(detected_object);
+  }
 }
 }  // namespace euclidean_cluster

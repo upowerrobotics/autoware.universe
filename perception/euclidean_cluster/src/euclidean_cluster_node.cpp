@@ -60,6 +60,7 @@ void EuclideanClusterNode::onPointCloud(
   // construct detected objects message
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects;
   convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, detected_objects);
+  detected_objects_pub_->publish(detected_objects);
 
   // build debug msg
   if (debug_pub_->get_subscription_count() < 1) {
