@@ -36,9 +36,6 @@ EuclideanClusterNode::EuclideanClusterNode(const rclcpp::NodeOptions & options)
     std::bind(&EuclideanClusterNode::onPointCloud, this, _1));
   detected_objects_pub_ = this->create_publisher<autoware_auto_perception_msgs::msg::DetectedObjects>(
     "detected_objects", rclcpp::QoS{1});
-  cluster_pub_ = this->create_publisher<tier4_perception_msgs::msg::DetectedObjectsWithFeature>(
-    "output", rclcpp::QoS{1});
-  debug_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("debug/clusters", 1);
 }
 
 void EuclideanClusterNode::onPointCloud(
@@ -52,25 +49,10 @@ void EuclideanClusterNode::onPointCloud(
   std::vector<pcl::PointCloud<pcl::PointXYZ>> clusters;
   cluster_->cluster(raw_pointcloud_ptr, clusters);
 
-  // build output msg
-  tier4_perception_msgs::msg::DetectedObjectsWithFeature output;
-  convertPointCloudClusters2Msg(input_msg->header, clusters, output);
-  cluster_pub_->publish(output);
-
   // construct detected objects message
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects;
   convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, detected_objects);
   detected_objects_pub_->publish(detected_objects);
-
-  // build debug msg
-  if (debug_pub_->get_subscription_count() < 1) {
-    return;
-  }
-  {
-    sensor_msgs::msg::PointCloud2 debug;
-    convertObjectMsg2SensorMsg(output, debug);
-    debug_pub_->publish(debug);
-  }
 }
 
 }  // namespace euclidean_cluster
