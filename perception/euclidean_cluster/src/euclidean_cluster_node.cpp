@@ -35,7 +35,7 @@ EuclideanClusterNode::EuclideanClusterNode(const rclcpp::NodeOptions & options)
     "input", rclcpp::SensorDataQoS().keep_last(1),
     std::bind(&EuclideanClusterNode::onPointCloud, this, _1));
   detected_objects_pub_ = this->create_publisher<autoware_auto_perception_msgs::msg::DetectedObjects>(
-    "detected_objects", rclcpp::QoS{1});
+    "output", rclcpp::QoS{1});
 }
 
 void EuclideanClusterNode::onPointCloud(
