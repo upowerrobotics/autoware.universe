@@ -130,6 +130,12 @@ void convertPointCloudClusters2DetectedObjects(
     pcl::getMinMax3D(cluster, min_pt, max_pt);
     Eigen::Vector3f dimensions = max_pt.head<3>() - min_pt.head<3>();
 
+    if (dimensions.z() > 5.0f || dimensions.z() < 1.0f
+      || dimensions.x() > 20.0f || dimensions.y() > 20.0f
+      || dimensions.x() * dimensions.y() / dimensions.z() > 10.0f
+      || detected_object.kinematics.pose_with_covariance.pose.position.z > 5.0f)
+      continue;
+
     detected_object.kinematics.has_position_covariance = false;
     detected_object.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
     detected_object.kinematics.has_twist = false;
