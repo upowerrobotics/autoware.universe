@@ -21,8 +21,6 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tier4_perception_msgs/msg/detected_objects_with_feature.hpp>
-
-#include <autoware_auto_perception_msgs/msg/detected_object.hpp>
 #include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
 
 #include <memory>
