@@ -136,6 +136,79 @@ void convertPointCloudClusters2DetectedObjects(
       || detected_object.kinematics.pose_with_covariance.pose.position.z > 5.0f)
       continue;
 
+    // get eigen vectors and eigen clusters of the point clusters
+    Eigen::Vector4f pcaCentroid;
+    pcl::compute3DCentroid(cluster, pcaCentroid);
+    Eigen::Matrix3f covariance;
+    pcl::computeCovarianceMatrixNormalized(cluster, pcaCentroid, covariance);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+    Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
+    Eigen::Vector3f eigenValuesPCA = eigen_solver.eigenvalues();
+    eigenVectorsPCA.col(2) = eigenVectorsPCA.col(0).cross(eigenVectorsPCA.col(1));
+    eigenVectorsPCA.col(0) = eigenVectorsPCA.col(1).cross(eigenVectorsPCA.col(2));
+    eigenVectorsPCA.col(1) = eigenVectorsPCA.col(2).cross(eigenVectorsPCA.col(0));
+    std::cout << "va (3x1):\n" << eigenValuesPCA << std::endl;
+    std::cout << "ve (3x3):\n" << eigenVectorsPCA << std::endl;
+    std::cout << "centroid (4x1):\n" << pcaCentroid << std::endl;
+
+    // construct transform and inverse transform matrices
+    Eigen::Matrix4f tm = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f tm_inv = Eigen::Matrix4f::Identity();
+    tm.block<3, 3>(0, 0) = eigenVectorsPCA.transpose();   //R.
+    tm.block<3, 1>(0, 3) = -1.0f * (eigenVectorsPCA.transpose()) *(pcaCentroid.head<3>());//  -R*t
+    tm_inv = tm.inverse();
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transformedCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::transformPointCloud(cluster, *transformedCloud, tm);
+
+    pcl::PointXYZ min_p1, max_p1;
+    Eigen::Vector3f c1, c;
+    pcl::getMinMax3D(*transformedCloud, min_p1, max_p1);
+    c1 = 0.5f*(min_p1.getVector3fMap() + max_p1.getVector3fMap());
+
+    std::cout << "centroid (3x1):\n" << c1 << std::endl;
+
+    Eigen::Affine3f tm_inv_aff(tm_inv);
+    pcl::transformPoint(c1, c, tm_inv_aff);
+
+    Eigen::Vector3f whd, whd1;
+    whd1 = max_p1.getVector3fMap() - min_p1.getVector3fMap();
+    whd = whd1;
+
+    std::cout << "width1=" << whd1(0) << std::endl;
+    std::cout << "heght1=" << whd1(1) << std::endl;
+    std::cout << "depth1=" << whd1(2) << std::endl;
+
+    // construct rectangular vertices
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transVertexCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr VertexCloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+    transVertexCloud->width = 6;
+    transVertexCloud->height = 1;
+    transVertexCloud->is_dense = false;
+    transVertexCloud->points.resize(transVertexCloud->width * transVertexCloud->height);
+    transVertexCloud->points[0].x = max_p1.x;
+    transVertexCloud->points[0].y = max_p1.y;
+    transVertexCloud->points[0].z = max_p1.z;
+    transVertexCloud->points[1].x = max_p1.x;
+    transVertexCloud->points[1].y = max_p1.y;
+    transVertexCloud->points[1].z = min_p1.z;
+    transVertexCloud->points[2].x = max_p1.x;
+    transVertexCloud->points[2].y = min_p1.y;
+    transVertexCloud->points[2].z = min_p1.z;
+    transVertexCloud->points[3].x = min_p1.x;
+    transVertexCloud->points[3].y = max_p1.y;
+    transVertexCloud->points[3].z = max_p1.z;
+    transVertexCloud->points[4].x = min_p1.x;
+    transVertexCloud->points[4].y = min_p1.y;
+    transVertexCloud->points[4].z = max_p1.z;
+    transVertexCloud->points[5].x = min_p1.x;
+    transVertexCloud->points[5].y = min_p1.y;
+    transVertexCloud->points[5].z = min_p1.z;
+    pcl::transformPointCloud(*transVertexCloud, *VertexCloud, tm_inv);
+
+
+
     detected_object.kinematics.has_position_covariance = false;
     detected_object.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
     detected_object.kinematics.has_twist = false;
@@ -156,9 +229,9 @@ void convertPointCloudClusters2DetectedObjects(
     detected_object.shape.footprint.points[3].x = -dimensions.x() / 2.0f;
     detected_object.shape.footprint.points[3].y = dimensions.y() / 2.0f;
     detected_object.shape.footprint.points[3].z = 0.0f;
-    detected_object.shape.dimensions.z = dimensions.z();
-    detected_object.shape.dimensions.x = dimensions.x();
-    detected_object.shape.dimensions.y = dimensions.y();
+    detected_object.shape.dimensions.z = whd(0);
+    detected_object.shape.dimensions.x = whd(1);
+    detected_object.shape.dimensions.y = whd(2);
     // add the detected object to detected objects message
     msg.objects.emplace_back(detected_object);
   }
