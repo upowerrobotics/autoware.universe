@@ -119,7 +119,13 @@ void convertPointCloudClusters2DetectedObjects(
 {
   msg.header = header;
   for (const auto & cluster : clusters) {
+    sensor_msgs::msg::PointCloud2 ros_pointcloud;
     autoware_auto_perception_msgs::msg::DetectedObject detected_object;
+    pcl::toROSMsg(cluster, ros_pointcloud);
+    // find out the dimension of the bounding box
+    Eigen::Vector4f min_pt, max_pt;
+    pcl::getMinMax3D(cluster, min_pt, max_pt);
+
 
     auto cluster_ptr = boost::make_shared<const pcl::PointCloud<pcl::PointXYZ>>(cluster);
 
@@ -130,23 +136,13 @@ void convertPointCloudClusters2DetectedObjects(
     feature_extractor.setInputCloud(cluster_ptr);
     feature_extractor.compute();
 
-    std::vector<float> moment_of_inertia;
-    std::vector<float> eccentricity;
-
     pcl::PointXYZ min_point_OBB;
     pcl::PointXYZ max_point_OBB;
     pcl::PointXYZ position_OBB;
     Eigen::Matrix3f rotational_matrix_OBB;
-    Eigen::Vector3f mass_center;
-    
-    // compute the moment of inertia
-    feature_extractor.getMomentOfInertia(moment_of_inertia);
-    // compute eccentricity
-    feature_extractor.getEccentricity(eccentricity);
+
     // get oriented bounding box
     feature_extractor.getOBB(min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
-    // get the mass center
-    feature_extractor.getMassCenter(mass_center);
 
     Eigen::Vector3f position(position_OBB.x, position_OBB.y, position_OBB.z);
     Eigen::Quaternionf quat(rotational_matrix_OBB);
