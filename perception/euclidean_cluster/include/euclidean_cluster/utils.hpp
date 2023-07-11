@@ -28,6 +28,7 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/common/transforms.h>
+#include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/registration/transformation_estimation_svd.h>
 
 #include <vector>
