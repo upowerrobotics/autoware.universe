@@ -122,25 +122,67 @@ void convertPointCloudClusters2DetectedObjects(
     sensor_msgs::msg::PointCloud2 ros_pointcloud;
     autoware_auto_perception_msgs::msg::DetectedObject detected_object;
     pcl::toROSMsg(cluster, ros_pointcloud);
+    ros_pointcloud.header = header;
+    detected_object.kinematics.pose_with_covariance.pose.position =
+      getCentroid(ros_pointcloud);
     // find out the dimension of the bounding box
     Eigen::Vector4f min_pt, max_pt;
     pcl::getMinMax3D(cluster, min_pt, max_pt);
+    Eigen::Vector3f dimensions = max_pt.head<3>() - min_pt.head<3>();
 
+    if (dimensions.z() > 5.0f || dimensions.z() < 1.0f
+      || dimensions.x() > 20.0f || dimensions.y() > 20.0f
+      || dimensions.x() * dimensions.y() / dimensions.z() > 10.0f
+      || detected_object.kinematics.pose_with_covariance.pose.position.z > 5.0f)
+      continue;
+    
+    // construct bottom points for bounding box creation
+    pcl::PointXYZ pt1, pt2, pt3, pt4;
+    for (const auto & pt : cluster.points)
+    {
+      if (pt.x == max_pt.head<3>().x())
+      {
+        pt1.x = pt.x;
+        pt1.y = pt.y;
+        pt1.z = 0.0f;
+      }
 
-    auto cluster_ptr = boost::make_shared<const pcl::PointCloud<pcl::PointXYZ>>(cluster);
+      if (pt.x == min_pt.head<3>().x())
+      {
+        pt2.x = pt.x;
+        pt2.y = pt.y;
+        pt2.z = 0.0f;
+      }
 
+      if (pt.y == max_pt.head<3>().y())
+      {
+        pt3.x = pt.x;
+        pt3.y = pt.y;
+        pt3.z = 0.0f;
+      }
+
+      if (pt.y == min_pt.head<3>().y())
+      {
+        pt4.x = pt.x;
+        pt4.y = pt.y;
+        pt4.z = pt.z;
+      }
+    }
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr bb_cluster_ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    bb_cluster_ptr->push_back(pt1);
+    bb_cluster_ptr->push_back(pt2);
+    bb_cluster_ptr->push_back(pt3);
+    bb_cluster_ptr->push_back(pt4);
     // create moment of inertia feature extractor
     pcl::MomentOfInertiaEstimation <pcl::PointXYZ> feature_extractor;
-
-
-    feature_extractor.setInputCloud(cluster_ptr);
+    feature_extractor.setInputCloud(bb_cluster_ptr);
     feature_extractor.compute();
 
     pcl::PointXYZ min_point_OBB;
     pcl::PointXYZ max_point_OBB;
     pcl::PointXYZ position_OBB;
     Eigen::Matrix3f rotational_matrix_OBB;
-
     // get oriented bounding box
     feature_extractor.getOBB(min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
 
@@ -150,50 +192,48 @@ void convertPointCloudClusters2DetectedObjects(
     // compute the cluster dimension
     float dim_x = max_point_OBB.x - min_point_OBB.x;
     float dim_y = max_point_OBB.y - min_point_OBB.y;
-    float dim_z = max_point_OBB.z - min_point_OBB.z;
-
-    if (dim_z > 5.0f || dim_z < 1.0f
-      || dim_x > 20.0f ||dim_y > 20.0f
-      || dim_x * dim_y / dim_z > 10.0f)
-      continue;
 
     Eigen::Vector3f p1(dim_x / 2.0f, dim_y / 2.0f, 0.0f);
     Eigen::Vector3f p2(dim_x / 2.0f, -dim_y / 2.0f, 0.0f);
     Eigen::Vector3f p3(-dim_x / 2.0f, -dim_y / 2.0f, 0.0f);
     Eigen::Vector3f p4(-dim_x / 2.0f, dim_y / 2.0f, 0.0f);
 
-    Eigen::Vector3f p1_rot = quat * p1;
-    Eigen::Vector3f p2_rot = quat * p2;
-
     geometry_msgs::msg::Point centroid;
     centroid.x = position.x();
     centroid.y = position.y();
     centroid.z = position.z();
 
+    geometry_msgs::msg::Quaternion q;
+    q.x = quat.x();
+    q.y = quat.y();
+    q.z = quat.z();
+    q.w = quat.w();
+
     detected_object.kinematics.pose_with_covariance.pose.position = centroid;
     detected_object.kinematics.has_position_covariance = false;
     detected_object.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+    detected_object.kinematics.pose_with_covariance.pose.orientation = q;
     detected_object.kinematics.has_twist = false;
     detected_object.kinematics.has_twist_covariance = false;
 
     // Fill in the Polygon of the Object
     detected_object.shape.type = autoware_auto_perception_msgs::msg::Shape::POLYGON;
     detected_object.shape.footprint.points.resize(4);
-    detected_object.shape.footprint.points[0].x = p1_rot.x();
-    detected_object.shape.footprint.points[0].y = p1_rot.y();
+    detected_object.shape.footprint.points[0].x = p1.x();
+    detected_object.shape.footprint.points[0].y = p1.y();
     detected_object.shape.footprint.points[0].z = 0.0f;
-    detected_object.shape.footprint.points[1].x = p2_rot.x();
-    detected_object.shape.footprint.points[1].y = p2_rot.y();
+    detected_object.shape.footprint.points[1].x = p2.x();
+    detected_object.shape.footprint.points[1].y = p2.y();
     detected_object.shape.footprint.points[1].z = 0.0f;
-    detected_object.shape.footprint.points[2].x = -p1_rot.x();
-    detected_object.shape.footprint.points[2].y = -p1_rot.y();
+    detected_object.shape.footprint.points[2].x = p3.x();
+    detected_object.shape.footprint.points[2].y = p3.y();
     detected_object.shape.footprint.points[2].z = 0.0f;
-    detected_object.shape.footprint.points[3].x = -p2_rot.x();
-    detected_object.shape.footprint.points[3].y = -p2_rot.y();
+    detected_object.shape.footprint.points[3].x = p4.x();
+    detected_object.shape.footprint.points[3].y = p4.y();
     detected_object.shape.footprint.points[3].z = 0.0f;
     detected_object.shape.dimensions.x = dim_x;
     detected_object.shape.dimensions.y = dim_y;
-    detected_object.shape.dimensions.z = dim_z;
+    detected_object.shape.dimensions.z = dimensions.z();
     // add the detected object to detected objects message
     msg.objects.emplace_back(detected_object);
   }
