@@ -74,7 +74,7 @@ void VoxelGridBasedEuclideanClusterNode::onPointCloud(
 
   // construct detected objects message
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects;
-  convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, detected_objects);
+  convertPointCloudClusters2DetectedObjectsOriented(input_msg->header, clusters, detected_objects, q_diff);
   detected_objects_pub_->publish(detected_objects);
 }
 

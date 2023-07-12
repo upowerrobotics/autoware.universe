@@ -47,4 +47,9 @@ void convertPointCloudClusters2DetectedObjects(
   const std_msgs::msg::Header & header,
   const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
   autoware_auto_perception_msgs::msg::DetectedObjects & msg);
+void convertPointCloudClusters2DetectedObjectsOriented(
+  const std_msgs::msg::Header & header,
+  const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
+  autoware_auto_perception_msgs::msg::DetectedObjects & msg,
+  Eigen::Quaternionf & q_diff);
 }  // namespace euclidean_cluster
