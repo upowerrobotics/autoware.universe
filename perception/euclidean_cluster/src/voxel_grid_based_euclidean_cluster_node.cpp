@@ -57,6 +57,21 @@ void VoxelGridBasedEuclideanClusterNode::onPointCloud(
   std::vector<pcl::PointCloud<pcl::PointXYZ>> clusters;
   cluster_->cluster(raw_pointcloud_ptr, clusters);
 
+  // compute the difference in orientation
+  Eigen::Quaternionf prev_q, q;
+  prev_q.x() = imu_prev_ptr_->orientation.x;
+  prev_q.y() = imu_prev_ptr_->orientation.y;
+  prev_q.z() = imu_prev_ptr_->orientation.z;
+  prev_q.w() = imu_prev_ptr_->orientation.w;
+
+  q.x() = imu_ptr_->orientation.x;
+  q.y() = imu_ptr_->orientation.y;
+  q.z() = imu_ptr_->orientation.z;
+  q.w() = imu_ptr_->orientation.w;
+
+  Eigen::Quaternionf q_diff = q * prev_q.inverse();
+
+
   // construct detected objects message
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects;
   convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, detected_objects);
