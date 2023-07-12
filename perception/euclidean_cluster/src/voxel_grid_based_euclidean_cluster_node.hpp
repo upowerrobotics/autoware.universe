@@ -42,6 +42,8 @@ private:
 
   std::shared_ptr<VoxelGridBasedEuclideanCluster> cluster_;
   sensor_msgs::msg::Imu::ConstSharedPtr imu_ptr_;
+  sensor_msgs::msg::Imu::ConstSharedPtr imu_prev_ptr_;
+  bool is_imu_initialized;
 
 };
 

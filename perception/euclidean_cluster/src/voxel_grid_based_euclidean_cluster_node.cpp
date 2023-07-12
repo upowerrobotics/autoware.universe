@@ -33,6 +33,7 @@ VoxelGridBasedEuclideanClusterNode::VoxelGridBasedEuclideanClusterNode(
   cluster_ = std::make_shared<VoxelGridBasedEuclideanCluster>(
     use_height, min_cluster_size, max_cluster_size, tolerance, voxel_leaf_size,
     min_points_number_per_voxel);
+  is_imu_initialized = false;
 
   using std::placeholders::_1;
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -66,6 +67,11 @@ void VoxelGridBasedEuclideanClusterNode::onImu(
   const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg)
 {
   imu_ptr_ = imu_msg;
+  if (!is_imu_initialized)
+  {
+    imu_prev_ptr_ = imu_msg;
+    RCLCPP_INFO(this->get_logger(), "initializing IMU messages");
+  }
 }
 
 }  // namespace euclidean_cluster
