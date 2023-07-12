@@ -14,28 +14,81 @@
 #ifndef BEHAVIOR_PATH_PLANNER__UTILS__LANE_CHANGE__LANE_CHANGE_MODULE_DATA_HPP_
 #define BEHAVIOR_PATH_PLANNER__UTILS__LANE_CHANGE__LANE_CHANGE_MODULE_DATA_HPP_
 
+#include "behavior_path_planner/utils/avoidance/avoidance_module_data.hpp"
 #include "lanelet2_core/geometry/Lanelet.h"
 
 #include "autoware_auto_planning_msgs/msg/path_point_with_lane_id.hpp"
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace behavior_path_planner
 {
+
+struct PoseWithPolygon
+{
+  Pose pose;
+  Polygon2d poly;
+
+  PoseWithPolygon(const Pose & pose, const Polygon2d & poly) : pose(pose), poly(poly) {}
+};
+
+struct PoseWithPolygonStamped : public PoseWithPolygon
+{
+  double time;
+
+  PoseWithPolygonStamped(const double time, const Pose & pose, const Polygon2d & poly)
+  : PoseWithPolygon(pose, poly), time(time)
+  {
+  }
+};
+
+struct PredictedPathWithPolygon
+{
+  float confidence;
+  std::vector<PoseWithPolygonStamped> path;
+};
+
+struct ExtendedPredictedObject
+{
+  unique_identifier_msgs::msg::UUID uuid;
+  geometry_msgs::msg::PoseWithCovariance initial_pose;
+  geometry_msgs::msg::TwistWithCovariance initial_twist;
+  geometry_msgs::msg::AccelWithCovariance initial_acceleration;
+  autoware_auto_perception_msgs::msg::Shape shape;
+  std::vector<PredictedPathWithPolygon> predicted_paths;
+};
+
+struct LaneChangeCancelParameters
+{
+  bool enable_on_prepare_phase{true};
+  bool enable_on_lane_changing_phase{false};
+  double delta_time{1.0};
+  double duration{5.0};
+  double max_lateral_jerk{10.0};
+  double overhang_tolerance{0.0};
+};
 struct LaneChangeParameters
 {
   // trajectory generation
-  double prepare_duration{2.0};
-  double lane_changing_lateral_jerk{0.5};
-  double lane_changing_lateral_acc{0.315};
-  double lane_changing_lateral_acc_at_low_velocity{0.15};
-  double lateral_acc_switching_velocity{0.4};
-  double lane_change_finish_judge_buffer{3.0};
-  double minimum_lane_changing_velocity{5.6};
+  double backward_lane_length{200.0};
   double prediction_time_resolution{0.5};
-  double maximum_deceleration{1.0};
-  int lane_change_sampling_num{10};
+  int longitudinal_acc_sampling_num{10};
+  int lateral_acc_sampling_num{10};
+
+  // parked vehicle
+  double object_check_min_road_shoulder_width{0.5};
+  double object_shiftable_ratio_threshold{0.6};
+
+  // turn signal
+  double min_length_for_turn_signal_activation{10.0};
+  double length_ratio_for_turn_signal_deactivation{0.8};
+
+  // acceleration data
+  double min_longitudinal_acc{-1.0};
+  double max_longitudinal_acc{1.0};
 
   // collision check
   bool enable_prepare_segment_collision_check{true};
@@ -54,16 +107,9 @@ struct LaneChangeParameters
   bool check_pedestrian{true};  // check object pedestrian
 
   // abort
-  bool enable_cancel_lane_change{true};
-  bool enable_abort_lane_change{false};
+  LaneChangeCancelParameters cancel;
 
-  double abort_delta_time{3.0};
-  double abort_max_lateral_jerk{10.0};
-
-  // drivable area expansion
-  double drivable_area_right_bound_offset{0.0};
-  double drivable_area_left_bound_offset{0.0};
-  std::vector<std::string> drivable_area_types_to_skip{};
+  double finish_judge_lateral_threshold{0.2};
 
   // debug marker
   bool publish_debug_marker{false};
@@ -82,6 +128,11 @@ struct LaneChangePhaseInfo
   double lane_changing{0.0};
 
   [[nodiscard]] double sum() const { return prepare + lane_changing; }
+
+  LaneChangePhaseInfo(const double _prepare, const double _lane_changing)
+  : prepare(_prepare), lane_changing(_lane_changing)
+  {
+  }
 };
 
 struct LaneChangeTargetObjectIndices
@@ -91,7 +142,39 @@ struct LaneChangeTargetObjectIndices
   std::vector<size_t> other_lane{};
 };
 
-enum class LaneChangeModuleType { NORMAL = 0, EXTERNAL_REQUEST };
+struct LaneChangeTargetObjects
+{
+  std::vector<ExtendedPredictedObject> current_lane{};
+  std::vector<ExtendedPredictedObject> target_lane{};
+  std::vector<ExtendedPredictedObject> other_lane{};
+};
+
+enum class LaneChangeModuleType {
+  NORMAL = 0,
+  EXTERNAL_REQUEST,
+  AVOIDANCE_BY_LANE_CHANGE,
+};
+
+struct AvoidanceByLCParameters : public AvoidanceParameters
+{
+  // execute if the target object number is larger than this param.
+  size_t execute_object_num{1};
+
+  // execute only when the target object longitudinal distance is larger than this param.
+  double execute_object_longitudinal_margin{0.0};
+
+  // execute only when lane change end point is before the object.
+  bool execute_only_when_lane_change_finish_before_object{false};
+};
 }  // namespace behavior_path_planner
+
+namespace behavior_path_planner::data::lane_change
+{
+struct PathSafetyStatus
+{
+  bool is_safe{true};
+  bool is_object_coming_from_rear{false};
+};
+}  // namespace behavior_path_planner::data::lane_change
 
 #endif  // BEHAVIOR_PATH_PLANNER__UTILS__LANE_CHANGE__LANE_CHANGE_MODULE_DATA_HPP_

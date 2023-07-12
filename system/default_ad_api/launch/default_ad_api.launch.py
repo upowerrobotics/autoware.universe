@@ -21,23 +21,22 @@ from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode
 from launch_ros.parameter_descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
-import os
-from ament_index_python.packages import get_package_share_directory
-import yaml
 
 
 def create_api_node(node_name, class_name, **kwargs):
-    config_file = os.path.join(get_package_share_directory("default_ad_api"), "config", "default_ad_api.param.yaml")
-    with open(config_file, 'r') as file:
-        config_params = yaml.safe_load(file)["/**"]["ros__parameters"]
-
     return ComposableNode(
         namespace="default_ad_api/node",
         name=node_name,
         package="default_ad_api",
         plugin="default_ad_api::" + class_name,
-        parameters=[config_params],
+        parameters=[ParameterFile(LaunchConfiguration("config"))],
     )
+
+
+def get_default_config():
+    path = FindPackageShare("default_ad_api")
+    path = PathJoinSubstitution([path, "config/default_ad_api.param.yaml"])
+    return path
 
 
 def generate_launch_description():
@@ -50,12 +49,22 @@ def generate_launch_description():
         create_api_node("operation_mode", "OperationModeNode"),
         create_api_node("planning", "PlanningNode"),
         create_api_node("routing", "RoutingNode"),
+        create_api_node("vehicle", "VehicleNode"),
+        create_api_node("vehicle_info", "VehicleInfoNode"),
     ]
     container = ComposableNodeContainer(
         namespace="default_ad_api",
         name="container",
         package="rclcpp_components",
         executable="component_container_mt",
+        ros_arguments=["--log-level", "default_ad_api.container:=WARN"],
         composable_node_descriptions=components,
     )
-    return launch.LaunchDescription([container])
+    web_server = Node(
+        namespace="default_ad_api",
+        package="default_ad_api",
+        name="web_server",
+        executable="web_server.py",
+    )
+    argument = DeclareLaunchArgument("config", default_value=get_default_config())
+    return launch.LaunchDescription([argument, container, web_server])

@@ -68,57 +68,77 @@ PathWithLaneId resamplePathWithSpline(
     transformed_path.at(i) = path.points.at(i).point;
   }
 
-  constexpr double epsilon = 0.2;
-  const auto has_almost_same_value = [&](const auto & vec, const auto x) {
-    if (vec.empty()) return false;
-    const auto has_close = [&](const auto v) { return std::abs(v - x) < epsilon; };
-    return std::find_if(vec.begin(), vec.end(), has_close) != vec.end();
+  const auto find_almost_same_values = [&](const std::vector<double> & vec, double x) {
+    constexpr double epsilon = 0.2;
+    const auto is_close = [&](double v, double x) { return std::abs(v - x) < epsilon; };
+
+    std::vector<size_t> indices;
+    if (vec.empty()) {
+      return boost::optional<std::vector<size_t>>();
+    }
+
+    for (size_t i = 0; i < vec.size(); ++i) {
+      if (is_close(vec[i], x)) {
+        indices.push_back(i);
+      }
+    }
+
+    return indices.empty() ? boost::optional<std::vector<size_t>>()
+                           : boost::optional<std::vector<size_t>>(indices);
   };
 
   // Get lane ids that are not duplicated
   std::vector<double> s_in;
-  std::vector<int64_t> unique_lane_ids;
+  std::unordered_set<int64_t> unique_lane_ids;
   const auto s_vec =
     motion_utils::calcSignedArcLengthPartialSum(transformed_path, 0, transformed_path.size());
   for (size_t i = 0; i < path.points.size(); ++i) {
     const double s = s_vec.at(i);
     for (const auto & lane_id : path.points.at(i).lane_ids) {
-      if (keep_input_points && !has_almost_same_value(s_in, s)) {
-        s_in.push_back(s);
+      if (!keep_input_points && (unique_lane_ids.find(lane_id) != unique_lane_ids.end())) {
+        continue;
       }
-      if (
-        std::find(unique_lane_ids.begin(), unique_lane_ids.end(), lane_id) !=
-        unique_lane_ids.end()) {
-        unique_lane_ids.push_back(lane_id);
-        if (!has_almost_same_value(s_in, s)) {
-          s_in.push_back(s);
-        }
+      unique_lane_ids.insert(lane_id);
+
+      if (!find_almost_same_values(s_in, s)) {
+        s_in.push_back(s);
       }
     }
   }
 
   std::vector<double> s_out = s_in;
 
+  // sampling from interval distance
   const auto start_s = std::max(target_section.first, 0.0);
   const auto end_s = std::min(target_section.second, s_vec.back());
   for (double s = start_s; s < end_s; s += interval) {
-    if (!has_almost_same_value(s_out, s)) {
+    if (!find_almost_same_values(s_out, s)) {
       s_out.push_back(s);
     }
   }
-
-  // Insert Terminal Point
-  if (!has_almost_same_value(s_out, end_s)) {
+  if (!find_almost_same_values(s_out, end_s)) {
     s_out.push_back(end_s);
   }
 
   // Insert Stop Point
   const auto closest_stop_dist = motion_utils::calcDistanceToForwardStopPoint(transformed_path);
-  if (closest_stop_dist && !has_almost_same_value(s_out, *closest_stop_dist)) {
-    s_out.push_back(*closest_stop_dist);
+  if (closest_stop_dist) {
+    const auto close_indices = find_almost_same_values(s_out, *closest_stop_dist);
+    if (close_indices) {
+      // Update the smallest index
+      s_out.at(close_indices->at(0)) = *closest_stop_dist;
+
+      // Remove the rest of the indices in descending order
+      for (size_t i = close_indices->size() - 1; i > 0; --i) {
+        s_out.erase(s_out.begin() + close_indices->at(i));
+      }
+    } else {
+      s_out.push_back(*closest_stop_dist);
+    }
   }
 
-  if (s_out.empty()) {
+  // spline resample required more than 2 points for yaw angle calculation
+  if (s_out.size() < 2) {
     return path;
   }
 
@@ -469,4 +489,58 @@ std::vector<Pose> interpolatePose(
   return interpolated_poses;
 }
 
+Pose getUnshiftedEgoPose(const Pose & ego_pose, const ShiftedPath & prev_path)
+{
+  if (prev_path.path.points.empty()) {
+    return ego_pose;
+  }
+
+  // un-shifted for current ideal pose
+  const auto closest_idx = motion_utils::findNearestIndex(prev_path.path.points, ego_pose.position);
+
+  // NOTE: Considering avoidance by motion, we set unshifted_pose as previous path instead of
+  // ego_pose.
+  auto unshifted_pose = motion_utils::calcInterpolatedPoint(prev_path.path, ego_pose).point.pose;
+
+  unshifted_pose = tier4_autoware_utils::calcOffsetPose(
+    unshifted_pose, 0.0, -prev_path.shift_length.at(closest_idx), 0.0);
+  unshifted_pose.orientation = ego_pose.orientation;
+
+  return unshifted_pose;
+}
+
+// TODO(Horibe) clean up functions: there is a similar code in util as well.
+PathWithLaneId calcCenterLinePath(
+  const std::shared_ptr<const PlannerData> & planner_data, const Pose & ref_pose,
+  const double longest_dist_to_shift_line, const std::optional<PathWithLaneId> & prev_module_path)
+{
+  const auto & p = planner_data->parameters;
+  const auto & route_handler = planner_data->route_handler;
+
+  PathWithLaneId centerline_path;
+
+  const auto extra_margin = 10.0;  // Since distance does not consider arclength, but just line.
+  const auto backward_length =
+    std::max(p.backward_path_length, longest_dist_to_shift_line + extra_margin);
+
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("path_utils"),
+    "p.backward_path_length = %f, longest_dist_to_shift_line = %f, backward_length = %f",
+    p.backward_path_length, longest_dist_to_shift_line, backward_length);
+
+  const lanelet::ConstLanelets current_lanes = [&]() {
+    if (!prev_module_path) {
+      return utils::calcLaneAroundPose(
+        route_handler, ref_pose, p.forward_path_length, backward_length);
+    }
+    return utils::getCurrentLanesFromPath(*prev_module_path, planner_data);
+  }();
+
+  centerline_path = utils::getCenterLinePath(
+    *route_handler, current_lanes, ref_pose, backward_length, p.forward_path_length, p);
+
+  centerline_path.header = route_handler->getRouteHeader();
+
+  return centerline_path;
+}
 }  // namespace behavior_path_planner::utils

@@ -16,6 +16,7 @@
 #define BEHAVIOR_PATH_PLANNER__SCENE_MODULE__LANE_CHANGE__INTERFACE_HPP_
 
 #include "behavior_path_planner/marker_util/lane_change/debug.hpp"
+#include "behavior_path_planner/scene_module/lane_change/avoidance_by_lane_change.hpp"
 #include "behavior_path_planner/scene_module/lane_change/base_class.hpp"
 #include "behavior_path_planner/scene_module/lane_change/external_request.hpp"
 #include "behavior_path_planner/scene_module/lane_change/normal.hpp"
@@ -54,48 +55,86 @@ class LaneChangeInterface : public SceneModuleInterface
 {
 public:
   LaneChangeInterface(
-    const std::string & name, rclcpp::Node & node,
-    const std::shared_ptr<LaneChangeParameters> & parameters,
+    const std::string & name, rclcpp::Node & node, std::shared_ptr<LaneChangeParameters> parameters,
     const std::unordered_map<std::string, std::shared_ptr<RTCInterface> > & rtc_interface_ptr_map,
     std::unique_ptr<LaneChangeBase> && module_type);
 
+  LaneChangeInterface(const LaneChangeInterface &) = delete;
+  LaneChangeInterface(LaneChangeInterface &&) = delete;
+  LaneChangeInterface & operator=(const LaneChangeInterface &) = delete;
+  LaneChangeInterface & operator=(LaneChangeInterface &&) = delete;
+  ~LaneChangeInterface() override = default;
+
   void processOnEntry() override;
+
   void processOnExit() override;
 
   bool isExecutionRequested() const override;
+
   bool isExecutionReady() const override;
 
   ModuleStatus updateState() override;
 
+  void updateData() override;
+
   BehaviorModuleOutput plan() override;
+
   BehaviorModuleOutput planWaitingApproval() override;
+
   CandidateOutput planCandidate() const override;
 
   std::shared_ptr<LaneChangeDebugMsgArray> get_debug_msg_array() const;
 
   void acceptVisitor(const std::shared_ptr<SceneModuleVisitor> & visitor) const override;
+
   void updateModuleParams(const std::shared_ptr<LaneChangeParameters> & parameters);
 
   void setData(const std::shared_ptr<const PlannerData> & data) override;
 
-private:
+  MarkerArray getModuleVirtualWall() override;
+
+  TurnSignalInfo getCurrentTurnSignalInfo(
+    const PathWithLaneId & path, const TurnSignalInfo & original_turn_signal_info);
+
+protected:
   std::shared_ptr<LaneChangeParameters> parameters_;
+
   std::unique_ptr<LaneChangeBase> module_type_;
 
   void resetPathIfAbort();
 
-protected:
+  void resetLaneChangeModule();
+
   void setObjectDebugVisualization() const;
+
   void updateSteeringFactorPtr(const BehaviorModuleOutput & output);
 
   void updateSteeringFactorPtr(
     const CandidateOutput & output, const LaneChangePath & selected_path) const;
+
+  mutable MarkerArray virtual_wall_marker_;
   mutable LaneChangeDebugMsgArray lane_change_debug_msg_array_;
 
   std::unique_ptr<PathWithLaneId> prev_approved_path_;
+
   void clearAbortApproval() { is_abort_path_approved_ = false; }
+
   bool is_abort_path_approved_{false};
+
   bool is_abort_approval_requested_{false};
+};
+
+class AvoidanceByLaneChangeInterface : public LaneChangeInterface
+{
+public:
+  AvoidanceByLaneChangeInterface(
+    const std::string & name, rclcpp::Node & node,
+    const std::shared_ptr<LaneChangeParameters> & parameters,
+    const std::shared_ptr<AvoidanceByLCParameters> & avoidance_by_lane_change_parameters,
+    const std::unordered_map<std::string, std::shared_ptr<RTCInterface> > & rtc_interface_ptr_map);
+
+protected:
+  void updateRTCStatus(const double start_distance, const double finish_distance) override;
 };
 }  // namespace behavior_path_planner
 

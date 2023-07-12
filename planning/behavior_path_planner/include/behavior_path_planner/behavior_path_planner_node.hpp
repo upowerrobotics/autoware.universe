@@ -16,36 +16,15 @@
 #define BEHAVIOR_PATH_PLANNER__BEHAVIOR_PATH_PLANNER_NODE_HPP_
 
 #include "behavior_path_planner/data_manager.hpp"
-#include "behavior_path_planner/scene_module/scene_module_interface.hpp"
-
-#ifdef USE_OLD_ARCHITECTURE
-#include "behavior_path_planner/behavior_tree_manager.hpp"
-#include "behavior_path_planner/scene_module/avoidance/avoidance_module.hpp"
-#include "behavior_path_planner/scene_module/lane_change/external_request_lane_change_module.hpp"
-#include "behavior_path_planner/scene_module/lane_change/lane_change_module.hpp"
-#include "behavior_path_planner/scene_module/lane_following/lane_following_module.hpp"
-#include "behavior_path_planner/scene_module/pull_out/pull_out_module.hpp"
-#include "behavior_path_planner/scene_module/pull_over/pull_over_module.hpp"
-#include "behavior_path_planner/scene_module/side_shift/side_shift_module.hpp"
-#else
 #include "behavior_path_planner/planner_manager.hpp"
 #include "behavior_path_planner/scene_module/avoidance/manager.hpp"
-#include "behavior_path_planner/scene_module/avoidance_by_lc/manager.hpp"
+#include "behavior_path_planner/scene_module/dynamic_avoidance/manager.hpp"
+#include "behavior_path_planner/scene_module/goal_planner/manager.hpp"
 #include "behavior_path_planner/scene_module/lane_change/manager.hpp"
-#include "behavior_path_planner/scene_module/pull_out/manager.hpp"
-#include "behavior_path_planner/scene_module/pull_over/manager.hpp"
+#include "behavior_path_planner/scene_module/scene_module_interface.hpp"
 #include "behavior_path_planner/scene_module/side_shift/manager.hpp"
-#endif
-
+#include "behavior_path_planner/scene_module/start_planner/manager.hpp"
 #include "behavior_path_planner/steering_factor_interface.hpp"
-#include "behavior_path_planner/turn_signal_decider.hpp"
-#include "behavior_path_planner/utils/avoidance/avoidance_module_data.hpp"
-#include "behavior_path_planner/utils/avoidance_by_lc/module_data.hpp"
-#include "behavior_path_planner/utils/lane_change/lane_change_module_data.hpp"
-#include "behavior_path_planner/utils/lane_following/module_data.hpp"
-#include "behavior_path_planner/utils/pull_out/pull_out_parameters.hpp"
-#include "behavior_path_planner/utils/pull_over/pull_over_parameters.hpp"
-#include "behavior_path_planner/utils/side_shift/side_shift_parameters.hpp"
 
 #include "tier4_planning_msgs/msg/detail/lane_change_debug_msg_array__struct.hpp"
 #include <autoware_adapi_v1_msgs/msg/operation_mode_state.hpp>
@@ -64,6 +43,7 @@
 #include <tier4_planning_msgs/msg/lane_change_debug_msg_array.hpp>
 #include <tier4_planning_msgs/msg/path_change_module.hpp>
 #include <tier4_planning_msgs/msg/scenario.hpp>
+#include <tier4_planning_msgs/msg/stop_reason_array.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
 #include <map>
@@ -76,6 +56,7 @@ namespace behavior_path_planner
 {
 using autoware_adapi_v1_msgs::msg::OperationModeState;
 using autoware_auto_mapping_msgs::msg::HADMapBin;
+using autoware_auto_perception_msgs::msg::PredictedObject;
 using autoware_auto_perception_msgs::msg::PredictedObjects;
 using autoware_auto_planning_msgs::msg::Path;
 using autoware_auto_planning_msgs::msg::PathWithLaneId;
@@ -92,6 +73,7 @@ using tier4_planning_msgs::msg::AvoidanceDebugMsgArray;
 using tier4_planning_msgs::msg::LaneChangeDebugMsgArray;
 using tier4_planning_msgs::msg::LateralOffset;
 using tier4_planning_msgs::msg::Scenario;
+using tier4_planning_msgs::msg::StopReasonArray;
 using visualization_msgs::msg::Marker;
 using visualization_msgs::msg::MarkerArray;
 
@@ -99,6 +81,9 @@ class BehaviorPathPlannerNode : public rclcpp::Node
 {
 public:
   explicit BehaviorPathPlannerNode(const rclcpp::NodeOptions & node_options);
+
+  // Getter method for waiting approval modules
+  std::vector<std::string> getWaitingApprovalModules();
 
 private:
   rclcpp::Subscription<LaneletRoute>::SharedPtr route_subscriber_;
@@ -116,6 +101,7 @@ private:
   rclcpp::Publisher<HazardLightsCommand>::SharedPtr hazard_signal_publisher_;
   rclcpp::Publisher<MarkerArray>::SharedPtr bound_publisher_;
   rclcpp::Publisher<PoseWithUuidStamped>::SharedPtr modified_goal_publisher_;
+  rclcpp::Publisher<StopReasonArray>::SharedPtr stop_reason_publisher_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   std::map<std::string, rclcpp::Publisher<Path>::SharedPtr> path_candidate_publishers_;
@@ -123,11 +109,7 @@ private:
 
   std::shared_ptr<PlannerData> planner_data_;
 
-#ifdef USE_OLD_ARCHITECTURE
-  std::shared_ptr<BehaviorTreeManager> bt_manager_;
-#else
   std::shared_ptr<PlannerManager> planner_manager_;
-#endif
 
   std::unique_ptr<SteeringFactorInterface> steering_factor_interface_ptr_;
   Scenario::SharedPtr current_scenario_{nullptr};
@@ -136,8 +118,6 @@ private:
   LaneletRoute::ConstSharedPtr route_ptr_{nullptr};
   bool has_received_map_{false};
   bool has_received_route_{false};
-
-  TurnSignalDecider turn_signal_decider_;
 
   std::mutex mutex_pd_;       // mutex for planner_data_
   std::mutex mutex_manager_;  // mutex for bt_manager_ or planner_manager_
@@ -148,29 +128,7 @@ private:
   bool isDataReady();
 
   // parameters
-  std::shared_ptr<AvoidanceParameters> avoidance_param_ptr_;
-  std::shared_ptr<AvoidanceByLCParameters> avoidance_by_lc_param_ptr_;
-  std::shared_ptr<SideShiftParameters> side_shift_param_ptr_;
-  std::shared_ptr<LaneChangeParameters> lane_change_param_ptr_;
-  std::shared_ptr<LaneFollowingParameters> lane_following_param_ptr_;
-  std::shared_ptr<PullOutParameters> pull_out_param_ptr_;
-  std::shared_ptr<PullOverParameters> pull_over_param_ptr_;
-
   BehaviorPathPlannerParameters getCommonParam();
-
-#ifdef USE_OLD_ARCHITECTURE
-  BehaviorTreeManagerParam getBehaviorTreeManagerParam();
-#endif
-
-  AvoidanceParameters getAvoidanceParam();
-  LaneChangeParameters getLaneChangeParam();
-  LaneFollowingParameters getLaneFollowingParam();
-  SideShiftParameters getSideShiftParam();
-  PullOverParameters getPullOverParam();
-  PullOutParameters getPullOutParam();
-  AvoidanceByLCParameters getAvoidanceByLCParam(
-    const std::shared_ptr<AvoidanceParameters> & avoidance_param,
-    const std::shared_ptr<LaneChangeParameters> & lane_change_param);
 
   // callback
   void onOdometry(const Odometry::ConstSharedPtr msg);
@@ -184,12 +142,6 @@ private:
   void onLateralOffset(const LateralOffset::ConstSharedPtr msg);
   SetParametersResult onSetParam(const std::vector<rclcpp::Parameter> & parameters);
 
-  /**
-   * @brief Modify the path points near the goal to smoothly connect the lanelet and the goal point.
-   */
-  PathWithLaneId modifyPathForSmoothGoalConnection(
-    const PathWithLaneId & path,
-    const std::shared_ptr<PlannerData> & planner_data) const;  // (TODO) move to util
   OnSetParametersCallbackHandle::SharedPtr m_set_param_res;
 
   /**
@@ -200,21 +152,9 @@ private:
   /**
    * @brief extract path from behavior tree output
    */
-#ifdef USE_OLD_ARCHITECTURE
   PathWithLaneId::SharedPtr getPath(
-    const BehaviorModuleOutput & bt_out, const std::shared_ptr<PlannerData> & planner_data,
-    const std::shared_ptr<BehaviorTreeManager> & bt_manager);
-#else
-  PathWithLaneId::SharedPtr getPath(
-    const BehaviorModuleOutput & bt_out, const std::shared_ptr<PlannerData> & planner_data,
+    const BehaviorModuleOutput & output, const std::shared_ptr<PlannerData> & planner_data,
     const std::shared_ptr<PlannerManager> & planner_manager);
-#endif
-
-  /**
-   * @brief skip smooth goal connection
-   */
-  bool skipSmoothGoalConnection(
-    const std::vector<std::shared_ptr<SceneModuleStatus>> & statuses) const;
 
   bool keepInputPoints(const std::vector<std::shared_ptr<SceneModuleStatus>> & statuses) const;
 
@@ -229,11 +169,18 @@ private:
   rclcpp::Publisher<MarkerArray>::SharedPtr debug_maximum_drivable_area_publisher_;
   rclcpp::Publisher<AvoidanceDebugMsgArray>::SharedPtr debug_avoidance_msg_array_publisher_;
   rclcpp::Publisher<LaneChangeDebugMsgArray>::SharedPtr debug_lane_change_msg_array_publisher_;
+  rclcpp::Publisher<MarkerArray>::SharedPtr debug_turn_signal_info_publisher_;
 
   /**
    * @brief publish steering factor from intersection
    */
-  void publish_steering_factor(const TurnIndicatorsCommand & turn_signal);
+  void publish_steering_factor(
+    const std::shared_ptr<PlannerData> & planner_data, const TurnIndicatorsCommand & turn_signal);
+
+  /**
+   * @brief publish turn signal debug info
+   */
+  void publish_turn_signal_debug_data(const TurnSignalDebugData & debug_data);
 
   /**
    * @brief publish left and right bound
@@ -243,19 +190,12 @@ private:
   /**
    * @brief publish debug messages
    */
-#ifdef USE_OLD_ARCHITECTURE
   void publishSceneModuleDebugMsg(
     const std::shared_ptr<SceneModuleVisitor> & debug_messages_data_ptr);
-#endif
 
   /**
    * @brief publish path candidate
    */
-#ifdef USE_OLD_ARCHITECTURE
-  void publishPathCandidate(
-    const std::vector<std::shared_ptr<SceneModuleInterface>> & scene_modules,
-    const std::shared_ptr<PlannerData> & planner_data);
-#else
   void publishPathCandidate(
     const std::vector<std::shared_ptr<SceneModuleManagerInterface>> & managers,
     const std::shared_ptr<PlannerData> & planner_data);
@@ -263,7 +203,6 @@ private:
   void publishPathReference(
     const std::vector<std::shared_ptr<SceneModuleManagerInterface>> & managers,
     const std::shared_ptr<PlannerData> & planner_data);
-#endif
 
   /**
    * @brief convert path with lane id to path for publish path candidate
