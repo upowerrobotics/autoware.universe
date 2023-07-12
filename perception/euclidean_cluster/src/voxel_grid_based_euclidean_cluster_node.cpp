@@ -38,6 +38,9 @@ VoxelGridBasedEuclideanClusterNode::VoxelGridBasedEuclideanClusterNode(
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
     "input", rclcpp::SensorDataQoS().keep_last(1),
     std::bind(&VoxelGridBasedEuclideanClusterNode::onPointCloud, this, _1));
+  imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
+    "imu_input", rclcpp::SensorDataQoS().keep_last(1),
+    std::bind(&VoxelGridBasedEuclideanClusterNode::onImu, this, _1));
   detected_objects_pub_ = this->create_publisher<autoware_auto_perception_msgs::msg::DetectedObjects>(
     "output", rclcpp::QoS{1});
 }
@@ -57,6 +60,12 @@ void VoxelGridBasedEuclideanClusterNode::onPointCloud(
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects;
   convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, detected_objects);
   detected_objects_pub_->publish(detected_objects);
+}
+
+void VoxelGridBasedEuclideanClusterNode::onImu(
+  const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg)
+{
+  imu_ptr_ = imu_msg;
 }
 
 }  // namespace euclidean_cluster

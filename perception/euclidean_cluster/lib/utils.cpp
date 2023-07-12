@@ -165,7 +165,7 @@ void convertPointCloudClusters2DetectedObjects(
       {
         pt4.x = pt.x;
         pt4.y = pt.y;
-        pt4.z = pt.z;
+        pt4.z = 0.0f;
       }
     }
 

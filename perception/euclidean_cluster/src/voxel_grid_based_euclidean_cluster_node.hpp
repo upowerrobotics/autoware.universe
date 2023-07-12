@@ -20,6 +20,7 @@
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include "sensor_msgs/msg/imu.hpp"
 #include <tier4_perception_msgs/msg/detected_objects_with_feature.hpp>
 
 #include <memory>
@@ -33,11 +34,15 @@ public:
 
 private:
   void onPointCloud(const sensor_msgs::msg::PointCloud2::ConstSharedPtr input_msg);
+  void onImu(sensor_msgs::msg::Imu::ConstSharedPtr imu_msg);
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
   rclcpp::Publisher<autoware_auto_perception_msgs::msg::DetectedObjects>::SharedPtr detected_objects_pub_;
 
   std::shared_ptr<VoxelGridBasedEuclideanCluster> cluster_;
+  sensor_msgs::msg::Imu::ConstSharedPtr imu_ptr_;
+
 };
 
 }  // namespace euclidean_cluster
