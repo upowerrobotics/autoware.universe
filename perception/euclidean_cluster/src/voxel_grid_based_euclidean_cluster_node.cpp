@@ -33,15 +33,11 @@ VoxelGridBasedEuclideanClusterNode::VoxelGridBasedEuclideanClusterNode(
   cluster_ = std::make_shared<VoxelGridBasedEuclideanCluster>(
     use_height, min_cluster_size, max_cluster_size, tolerance, voxel_leaf_size,
     min_points_number_per_voxel);
-  is_imu_initialized = false;
 
   using std::placeholders::_1;
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
     "input", rclcpp::SensorDataQoS().keep_last(1),
     std::bind(&VoxelGridBasedEuclideanClusterNode::onPointCloud, this, _1));
-  imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-    "imu_input", rclcpp::SensorDataQoS().keep_last(1),
-    std::bind(&VoxelGridBasedEuclideanClusterNode::onImu, this, _1));
   detected_objects_pub_ = this->create_publisher<autoware_auto_perception_msgs::msg::DetectedObjects>(
     "output", rclcpp::QoS{1});
 }
@@ -57,38 +53,11 @@ void VoxelGridBasedEuclideanClusterNode::onPointCloud(
   std::vector<pcl::PointCloud<pcl::PointXYZ>> clusters;
   cluster_->cluster(raw_pointcloud_ptr, clusters);
 
-  // compute the difference in orientation
-  Eigen::Quaternionf prev_q, q;
-  prev_q.x() = imu_prev_ptr_->orientation.x;
-  prev_q.y() = imu_prev_ptr_->orientation.y;
-  prev_q.z() = imu_prev_ptr_->orientation.z;
-  prev_q.w() = imu_prev_ptr_->orientation.w;
-
-  q.x() = imu_ptr_->orientation.x;
-  q.y() = imu_ptr_->orientation.y;
-  q.z() = imu_ptr_->orientation.z;
-  q.w() = imu_ptr_->orientation.w;
-
-  Eigen::Quaternionf q_diff = q * prev_q.inverse();
-
-
   // construct detected objects message
   autoware_auto_perception_msgs::msg::DetectedObjects detected_objects;
-  convertPointCloudClusters2DetectedObjectsOriented(input_msg->header, clusters, detected_objects, q_diff);
+  convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, detected_objects);
   detected_objects_pub_->publish(detected_objects);
 }
-
-void VoxelGridBasedEuclideanClusterNode::onImu(
-  const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg)
-{
-  imu_ptr_ = imu_msg;
-  if (!is_imu_initialized)
-  {
-    imu_prev_ptr_ = imu_msg;
-    RCLCPP_INFO(this->get_logger(), "initializing IMU messages");
-  }
-}
-
 }  // namespace euclidean_cluster
 
 #include <rclcpp_components/register_node_macro.hpp>
