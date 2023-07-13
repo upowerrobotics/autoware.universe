@@ -119,12 +119,7 @@ void convertPointCloudClusters2DetectedObjects(
 {
   msg.header = header;
   for (const auto & cluster : clusters) {
-    sensor_msgs::msg::PointCloud2 ros_pointcloud;
     autoware_auto_perception_msgs::msg::DetectedObject detected_object;
-    pcl::toROSMsg(cluster, ros_pointcloud);
-    ros_pointcloud.header = header;
-    detected_object.kinematics.pose_with_covariance.pose.position =
-      getCentroid(ros_pointcloud);
     // find out the dimension of the bounding box
     Eigen::Vector4f min_pt, max_pt;
     pcl::getMinMax3D(cluster, min_pt, max_pt);
