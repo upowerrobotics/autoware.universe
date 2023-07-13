@@ -161,7 +161,8 @@ void convertPointCloudClusters2DetectedObjects(
     Eigen::Matrix4f tm = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f tm_inv = Eigen::Matrix4f::Identity();
     tm.block<3, 3>(0, 0) = pca.getEigenVectors().transpose();  // R
-    tm.block<3, 1>(0, 3) = -1.0f * (pca.getEigenVectors().transpose()) *(pcaCentroid.head<3>());  // -R*t
+    tm.block<3, 1>(0, 3) = -1.0f *
+      (pca.getEigenVectors().transpose()) * (pcaCentroid.head<3>());  // -R*t
 
     tm_inv = tm.inverse();
     pcl::PointCloud<pcl::PointXYZ>::Ptr transformedCloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -188,7 +189,8 @@ void convertPointCloudClusters2DetectedObjects(
 
     detected_object.kinematics.pose_with_covariance.pose.position = centroid;
     detected_object.kinematics.has_position_covariance = false;
-    detected_object.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+    detected_object.kinematics.orientation_availability =
+      autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
     detected_object.kinematics.pose_with_covariance.pose.orientation = q;
     detected_object.kinematics.has_twist = false;
     detected_object.kinematics.has_twist_covariance = false;
