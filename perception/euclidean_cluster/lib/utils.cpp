@@ -199,7 +199,7 @@ void convertPointCloudClusters2DetectedObjects(
     detected_object.kinematics.pose_with_covariance.pose.position = bb_position;
     detected_object.kinematics.has_position_covariance = false;
     detected_object.kinematics.orientation_availability =
-      autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+    autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
     // set the orientation of the detected object bounding box
     detected_object.kinematics.pose_with_covariance.pose.orientation = bb_rotation;
     detected_object.kinematics.has_twist = false;

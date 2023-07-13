@@ -38,7 +38,6 @@ private:
   rclcpp::Publisher<autoware_auto_perception_msgs::msg::DetectedObjects>::SharedPtr detected_objects_pub_;
 
   std::shared_ptr<VoxelGridBasedEuclideanCluster> cluster_;
-
 };
 
 }  // namespace euclidean_cluster
