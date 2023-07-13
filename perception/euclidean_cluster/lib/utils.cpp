@@ -168,12 +168,8 @@ void convertPointCloudClusters2DetectedObjects(
     pcl::transformPointCloud(*obb_cluster_ptr, *transformedCloud, tm);
 
     pcl::PointXYZ min_pt_obb, max_pt_obb;
-    Eigen::Vector3f c1, c;
     pcl::getMinMax3D(*transformedCloud, min_pt_obb, max_pt_obb);
-    c1 = 0.5f*(min_pt_obb.getVector3fMap() + max_pt_obb.getVector3fMap());
 
-    Eigen::Affine3f tm_inv_aff(tm_inv);
-    pcl::transformPoint(c1, c, tm_inv_aff);
     Eigen::Vector3f bb_size;
     bb_size = max_pt_obb.getVector3fMap() - min_pt_obb.getVector3fMap();
 
