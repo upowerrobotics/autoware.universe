@@ -136,6 +136,7 @@ void convertPointCloudClusters2DetectedObjects(
     pcl::PointCloud<pcl::PointXYZ>::Ptr obb_cluster_ptr(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointXYZ pt_no_height;
     // add points to the point cloud while also removing their z component
+    // this is to prevent non-zero components in roll and pitch
     for (const auto & pt : cluster.points)
     {
       pt_no_height.x = pt.x;
