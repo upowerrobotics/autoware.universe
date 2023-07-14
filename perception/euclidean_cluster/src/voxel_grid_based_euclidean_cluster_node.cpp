@@ -24,12 +24,12 @@ VoxelGridBasedEuclideanClusterNode::VoxelGridBasedEuclideanClusterNode(
   const rclcpp::NodeOptions & options)
 : Node("voxel_grid_based_euclidean_cluster_node", options)
 {
-  const bool use_height = this->declare_parameter("use_height", false);
-  const int min_cluster_size = this->declare_parameter("min_cluster_size", 1);
-  const int max_cluster_size = this->declare_parameter("max_cluster_size", 500);
-  const float tolerance = this->declare_parameter("tolerance", 1.0);
-  const float voxel_leaf_size = this->declare_parameter("voxel_leaf_size", 0.5);
-  const int min_points_number_per_voxel = this->declare_parameter("min_points_number_per_voxel", 3);
+  const bool use_height = this->declare_parameter("use_height", rclcpp::PARAMETER_BOOL).get<bool>();
+  const int min_cluster_size = this->declare_parameter("min_cluster_size", rclcpp::PARAMETER_INTEGER).get<uint32_t>();
+  const int max_cluster_size = this->declare_parameter("max_cluster_size", rclcpp::PARAMETER_INTEGER).get<uint32_t>();
+  const float tolerance = this->declare_parameter("tolerance", rclcpp::PARAMETER_DOUBLE).get<float_t>();
+  const float voxel_leaf_size = this->declare_parameter("voxel_leaf_size", rclcpp::PARAMETER_DOUBLE).get<float_t>();
+  const int min_points_number_per_voxel = this->declare_parameter("min_points_number_per_voxel", rclcpp::PARAMETER_INTEGER).get<uint32_t>();
   cluster_ = std::make_shared<VoxelGridBasedEuclideanCluster>(
     use_height, min_cluster_size, max_cluster_size, tolerance, voxel_leaf_size,
     min_points_number_per_voxel);
@@ -58,7 +58,6 @@ void VoxelGridBasedEuclideanClusterNode::onPointCloud(
   convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, detected_objects);
   detected_objects_pub_->publish(detected_objects);
 }
-
 }  // namespace euclidean_cluster
 
 #include <rclcpp_components/register_node_macro.hpp>

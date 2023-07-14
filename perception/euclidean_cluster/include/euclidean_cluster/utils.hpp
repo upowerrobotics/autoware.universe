@@ -25,6 +25,8 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/common/common.h>
+#include <pcl/common/transforms.h>
+#include <pcl/common/pca.h>
 
 #include <vector>
 

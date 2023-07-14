@@ -119,46 +119,110 @@ void convertPointCloudClusters2DetectedObjects(
 {
   msg.header = header;
   for (const auto & cluster : clusters) {
-    sensor_msgs::msg::PointCloud2 ros_pointcloud;
     autoware_auto_perception_msgs::msg::DetectedObject detected_object;
-    pcl::toROSMsg(cluster, ros_pointcloud);
-    ros_pointcloud.header = header;
-    detected_object.kinematics.pose_with_covariance.pose.position =
-      getCentroid(ros_pointcloud);
     // find out the dimension of the bounding box
     Eigen::Vector4f min_pt, max_pt;
     pcl::getMinMax3D(cluster, min_pt, max_pt);
     Eigen::Vector3f dimensions = max_pt.head<3>() - min_pt.head<3>();
 
+    // remove clusters that too large
     if (dimensions.z() > 5.0f || dimensions.z() < 1.0f
       || dimensions.x() > 20.0f || dimensions.y() > 20.0f
       || dimensions.x() * dimensions.y() / dimensions.z() > 10.0f
       || detected_object.kinematics.pose_with_covariance.pose.position.z > 5.0f)
       continue;
 
+    // create point cloud for bounding box creation
+    pcl::PointCloud<pcl::PointXYZ>::Ptr obb_cluster_ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointXYZ pt_no_height;
+    // add points to the point cloud while also removing their z component
+    // this is to prevent non-zero components in roll and pitch
+    for (const auto & pt : cluster.points)
+    {
+      pt_no_height.x = pt.x;
+      pt_no_height.y = pt.y;
+      pt_no_height.z = 0.0f;
+      obb_cluster_ptr->push_back(pt_no_height);
+    }
+    // compute the centroid for the clustered point cloud
+    Eigen::Vector4f pcaCentroid;
+    pcl::compute3DCentroid(*obb_cluster_ptr, pcaCentroid);
+    Eigen::Matrix3f covariance;
+    pcl::computeCovarianceMatrixNormalized(*obb_cluster_ptr, pcaCentroid, covariance);
+    // compute the major axis of point cloud via PCA projection
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPCAprojection(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PCA<pcl::PointXYZ> pca;
+    pca.setInputCloud(obb_cluster_ptr);
+    pca.project(*obb_cluster_ptr, *cloudPCAprojection);
+
+    // create the transform matrices
+    Eigen::Matrix4f tm = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f tm_inv = Eigen::Matrix4f::Identity();
+
+    // construct the transform matrix for rotating the point cloud
+    // so that the major axis aligns with the local reference frame
+    tm.block<3, 3>(0, 0) = pca.getEigenVectors().transpose();  // R
+    tm.block<3, 1>(0, 3) = -1.0f *
+      (pca.getEigenVectors().transpose()) * (pcaCentroid.head<3>());  // -R*t
+    // construct the inverse transform matrix
+    tm_inv = tm.inverse();
+
+    // transform the point cloud so that its major axis aligns with local reference frame
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transformedCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::transformPointCloud(*obb_cluster_ptr, *transformedCloud, tm);
+
+    // get the boundary of the transformed point cloud
+    pcl::PointXYZ min_pt_obb, max_pt_obb;
+    pcl::getMinMax3D(*transformedCloud, min_pt_obb, max_pt_obb);
+
+    // compute the bounding box size for the transformed point cloud
+    Eigen::Vector3f bb_size;
+    bb_size = max_pt_obb.getVector3fMap() - min_pt_obb.getVector3fMap();
+
+    // get the rotational offset to transform back into the original point cloud
+    const Eigen::Quaternionf q_inv(tm_inv.block<3, 3>(0, 0));
+
+    // get the bounding box position from the computed centroid
+    geometry_msgs::msg::Point bb_position;
+    bb_position.x = pcaCentroid.head<3>()(0);
+    bb_position.y = pcaCentroid.head<3>()(1);
+    bb_position.z = pcaCentroid.head<3>()(2);
+
+    // get the bounding box rotation
+    geometry_msgs::msg::Quaternion bb_rotation;
+    bb_rotation.x = q_inv.x();
+    bb_rotation.y = q_inv.y();
+    bb_rotation.z = q_inv.z();
+    bb_rotation.w = q_inv.w();
+
+    // set the position of the detected object bounding box
+    detected_object.kinematics.pose_with_covariance.pose.position = bb_position;
     detected_object.kinematics.has_position_covariance = false;
-    detected_object.kinematics.orientation_availability = autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+    detected_object.kinematics.orientation_availability =
+    autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+    // set the orientation of the detected object bounding box
+    detected_object.kinematics.pose_with_covariance.pose.orientation = bb_rotation;
     detected_object.kinematics.has_twist = false;
     detected_object.kinematics.has_twist_covariance = false;
 
-    // Fill in the Polygon of the Object
+    // construct detected object bounding box
     detected_object.shape.type = autoware_auto_perception_msgs::msg::Shape::POLYGON;
     detected_object.shape.footprint.points.resize(4);
-    detected_object.shape.footprint.points[0].x = dimensions.x() / 2.0f;
-    detected_object.shape.footprint.points[0].y = dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[0].x = bb_size(0) / 2.0f;
+    detected_object.shape.footprint.points[0].y = bb_size(1) / 2.0f;
     detected_object.shape.footprint.points[0].z = 0.0f;
-    detected_object.shape.footprint.points[1].x = dimensions.x() / 2.0f;
-    detected_object.shape.footprint.points[1].y = -dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[1].x = bb_size(0) / 2.0f;
+    detected_object.shape.footprint.points[1].y = -bb_size(1) / 2.0f;
     detected_object.shape.footprint.points[1].z = 0.0f;
-    detected_object.shape.footprint.points[2].x = -dimensions.x() / 2.0f;
-    detected_object.shape.footprint.points[2].y = -dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[2].x = -bb_size(0) / 2.0f;
+    detected_object.shape.footprint.points[2].y = -bb_size(1) / 2.0f;
     detected_object.shape.footprint.points[2].z = 0.0f;
-    detected_object.shape.footprint.points[3].x = -dimensions.x() / 2.0f;
-    detected_object.shape.footprint.points[3].y = dimensions.y() / 2.0f;
+    detected_object.shape.footprint.points[3].x = -bb_size(0) / 2.0f;
+    detected_object.shape.footprint.points[3].y = bb_size(1) / 2.0f;
     detected_object.shape.footprint.points[3].z = 0.0f;
+    detected_object.shape.dimensions.x = bb_size(0);
+    detected_object.shape.dimensions.y = bb_size(1);
     detected_object.shape.dimensions.z = dimensions.z();
-    detected_object.shape.dimensions.x = dimensions.x();
-    detected_object.shape.dimensions.y = dimensions.y();
     // add the detected object to detected objects message
     msg.objects.emplace_back(detected_object);
   }
