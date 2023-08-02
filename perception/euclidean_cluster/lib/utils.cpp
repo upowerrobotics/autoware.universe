@@ -233,8 +233,18 @@ void convertPointCloudClusters2PointClusters(
   const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
   autoware_auto_perception_msgs::msg::PointClusters & msg)
 {
-  (void)header;
-  (void)clusters;
-  (void)msg;
+  msg.header = header;
+  for (const auto & cluster : clusters) {
+    uint32_t num_pt = 0;
+    for (const auto & pt : cluster) {
+      autoware_auto_perception_msgs::msg::PointXYZIF pt_xyzif;
+      pt_xyzif.x = pt.x;
+      pt_xyzif.y = pt.y;
+      pt_xyzif.z = pt.z;
+      msg.points.push_back(pt_xyzif);
+      ++num_pt;
+    }
+    msg.cluster_boundary.push_back(num_pt);
+  }
 }
 }  // namespace euclidean_cluster
