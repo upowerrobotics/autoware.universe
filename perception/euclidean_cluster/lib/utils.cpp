@@ -227,4 +227,14 @@ void convertPointCloudClusters2DetectedObjects(
     msg.objects.emplace_back(detected_object);
   }
 }
+
+void convertPointCloudClusters2PointClusters(
+  const std_msgs::msg::Header & header,
+  const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
+  autoware_auto_perception_msgs::msg::PointClusters & msg)
+{
+  (void)header;
+  (void)clusters;
+  (void)msg;
+}
 }  // namespace euclidean_cluster
