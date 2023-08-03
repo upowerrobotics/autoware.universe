@@ -235,6 +235,7 @@ void convertPointCloudClusters2PointClusters(
 {
   msg.header = header;
   autoware_auto_perception_msgs::msg::PointXYZIF pt_xyzif;
+  size_t cluster_boundary = 0;
   for (const auto & cluster : clusters) {
     for (const auto & pt : cluster) {
       pt_xyzif.x = pt.x;
@@ -242,7 +243,8 @@ void convertPointCloudClusters2PointClusters(
       pt_xyzif.z = pt.z;
       msg.points.push_back(pt_xyzif);
     }
-    msg.cluster_boundary.push_back(cluster.size());
+    cluster_boundary += cluster.size();
+    msg.cluster_boundary.push_back(cluster_boundary);
   }
 }
 }  // namespace euclidean_cluster
