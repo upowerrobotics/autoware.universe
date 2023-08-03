@@ -13,14 +13,8 @@
 # limitations under the License.
 
 import launch
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
-from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import ComposableNodeContainer
-from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode
-from launch_ros.parameter_descriptions import ParameterFile
-from launch_ros.substitutions import FindPackageShare
 import os
 from ament_index_python.packages import get_package_share_directory
 import yaml
@@ -42,13 +36,6 @@ def create_api_node(node_name, class_name, **kwargs):
 
 def generate_launch_description():
     components = [
-        create_api_node("autoware_state", "AutowareStateNode"),
-        create_api_node("fail_safe", "FailSafeNode"),
-        create_api_node("interface", "InterfaceNode"),
-        create_api_node("localization", "LocalizationNode"),
-        create_api_node("motion", "MotionNode"),
-        create_api_node("operation_mode", "OperationModeNode"),
-        create_api_node("planning", "PlanningNode"),
         create_api_node("routing", "RoutingNode"),
     ]
     container = ComposableNodeContainer(
