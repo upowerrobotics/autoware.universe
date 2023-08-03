@@ -241,10 +241,11 @@ void convertPointCloudClusters2PointClusters(
       pt_xyzif.x = pt.x;
       pt_xyzif.y = pt.y;
       pt_xyzif.z = pt.z;
-      msg.points.push_back(pt_xyzif);
+      pt_xyzif.intensity = 1.0;
+      msg.points.emplace_back(pt_xyzif);
     }
     cluster_boundary += cluster.size();
-    msg.cluster_boundary.push_back(cluster_boundary);
+    msg.cluster_boundary.emplace_back(cluster_boundary);
   }
 }
 }  // namespace euclidean_cluster
