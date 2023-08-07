@@ -227,4 +227,25 @@ void convertPointCloudClusters2DetectedObjects(
     msg.objects.emplace_back(detected_object);
   }
 }
+
+void convertPointCloudClusters2PointClusters(
+  const std_msgs::msg::Header & header,
+  const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
+  autoware_auto_perception_msgs::msg::PointClusters & msg)
+{
+  msg.header = header;
+  autoware_auto_perception_msgs::msg::PointXYZIF pt_xyzif;
+  size_t cluster_boundary = 0;
+  for (const auto & cluster : clusters) {
+    for (const auto & pt : cluster) {
+      pt_xyzif.x = pt.x;
+      pt_xyzif.y = pt.y;
+      pt_xyzif.z = pt.z;
+      pt_xyzif.intensity = 1.0;
+      msg.points.emplace_back(pt_xyzif);
+    }
+    cluster_boundary += cluster.size();
+    msg.cluster_boundary.emplace_back(cluster_boundary);
+  }
+}
 }  // namespace euclidean_cluster

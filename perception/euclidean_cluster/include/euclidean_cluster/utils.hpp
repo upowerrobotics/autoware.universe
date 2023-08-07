@@ -20,6 +20,7 @@
 
 #include <autoware_auto_perception_msgs/msg/detected_object.hpp>
 #include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
+#include <autoware_auto_perception_msgs/msg/point_clusters.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -44,4 +45,8 @@ void convertPointCloudClusters2DetectedObjects(
   const std_msgs::msg::Header & header,
   const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
   autoware_auto_perception_msgs::msg::DetectedObjects & msg);
+void convertPointCloudClusters2PointClusters(
+  const std_msgs::msg::Header & header,
+  const std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters,
+  autoware_auto_perception_msgs::msg::PointClusters & msg);
 }  // namespace euclidean_cluster
