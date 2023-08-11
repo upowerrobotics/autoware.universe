@@ -78,7 +78,7 @@ MissionPlanner::MissionPlanner(const rclcpp::NodeOptions & options)
 
   odometry_ = nullptr;
   sub_odometry_ = create_subscription<Odometry>(
-    "/localization/kinematic_state", rclcpp::QoS(1),
+    "/localization/absolute_odom", rclcpp::QoS(1),
     std::bind(&MissionPlanner::on_odometry, this, std::placeholders::_1));
 
   const auto durable_qos = rclcpp::QoS(1).transient_local();
