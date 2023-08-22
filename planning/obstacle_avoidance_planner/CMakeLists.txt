@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(obstacle_avoidance_planner)
-
+add_compile_options(-g)
 include(CheckCXXCompilerFlag)
 
 # NOTE: With the following option, when the compile-time and runtime CPU

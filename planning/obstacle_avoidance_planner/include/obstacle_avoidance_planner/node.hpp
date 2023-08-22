@@ -87,6 +87,7 @@ protected:  // for the static_centerline_optimizer package
   // interface publisher
   rclcpp::Publisher<Trajectory>::SharedPtr traj_pub_;
   rclcpp::Publisher<MarkerArray>::SharedPtr virtual_wall_pub_;
+  rclcpp::Publisher<Path>::SharedPtr odom_path_pub_;
 
   // interface subscriber
   rclcpp::Subscription<Path>::SharedPtr path_sub_;
@@ -102,8 +103,14 @@ protected:  // for the static_centerline_optimizer package
     const std::vector<rclcpp::Parameter> & parameters);
   OnSetParametersCallbackHandle::SharedPtr set_param_res_;
 
-  // subscriber callback function
-  void onPath(const Path::SharedPtr);
+  // tf
+  geometry_msgs::msg::TransformStamped transform_stamped_;
+  std::shared_ptr<tf2_ros::Buffer> map_odom_tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> map_odom_tf_listener_;
+
+    // subscriber callback function
+  void onPath(const Path::SharedPtr path_ptr);
+  std::shared_ptr<Path> odom_path_ptr_;
 
   // reset functions
   void initializePlanning();
@@ -130,6 +137,7 @@ protected:  // for the static_centerline_optimizer package
     const PlannerData & planner_data, std::vector<TrajectoryPoint> & traj_points) const;
   void publishVirtualWall(const geometry_msgs::msg::Pose & stop_pose) const;
   void publishDebugMarkerOfOptimization(const std::vector<TrajectoryPoint> & traj_points) const;
+  void transformPathToOdomFrame(const Path::SharedPtr path_ptr) const;
 };
 }  // namespace obstacle_avoidance_planner
 
