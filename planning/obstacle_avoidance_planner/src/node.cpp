@@ -204,12 +204,18 @@ void ObstacleAvoidancePlanner::resetPreviousData()
 
 void ObstacleAvoidancePlanner::onPath(Path::SharedPtr path_ptr)
 {
-  if (!map_odom_tf_buffer_->canTransform("odom", "map", tf2::TimePointZero)){
-    RCLCPP_INFO(get_logger(), "map to odom transform not available yet.");
-    return;
+  if (!ego_state_ptr_){
+      RCLCPP_INFO(get_logger(), "Waiting for ego pose and twist");
+      return;
   }
 
-  transformPathToOdomFrame(path_ptr);
+  if (ego_state_ptr_->header.frame_id=="odom"){
+      if (!map_odom_tf_buffer_->canTransform("odom", "map", tf2::TimePointZero)){
+          RCLCPP_INFO(get_logger(), "map to odom transform not available yet.");
+          return;
+      }
+      transformPathToOdomFrame(path_ptr);
+  }
 
   odom_path_pub_->publish(*path_ptr);
 
