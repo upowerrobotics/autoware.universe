@@ -36,23 +36,23 @@ std::vector<T> concatVectors(const std::vector<T> & prev_vector, const std::vect
   return concatenated_vector;
 }
 
-//StringStamped createStringStamped(const rclcpp::Time & now, const std::string & data)
-//{
-//  StringStamped msg;
-//  msg.stamp = now;
-//  msg.data = data;
-//  return msg;
-//}
+StringStamped createStringStamped(const rclcpp::Time & now, const std::string & data)
+{
+  StringStamped msg;
+  msg.stamp = now;
+  msg.data = data;
+  return msg;
+}
 
-//void setZeroVelocityAfterStopPoint(std::vector<TrajectoryPoint> & traj_points)
-//{
-//  const auto opt_zero_vel_idx = motion_utils::searchZeroVelocityIndex(traj_points);
-//  if (opt_zero_vel_idx) {
-//    for (size_t i = opt_zero_vel_idx.get(); i < traj_points.size(); ++i) {
-//      traj_points.at(i).longitudinal_velocity_mps = 0.0;
-//    }
-//  }
-//}
+void setZeroVelocityAfterStopPoint(std::vector<TrajectoryPoint> & traj_points)
+{
+  const auto opt_zero_vel_idx = motion_utils::searchZeroVelocityIndex(traj_points);
+  if (opt_zero_vel_idx) {
+    for (size_t i = opt_zero_vel_idx.get(); i < traj_points.size(); ++i) {
+      traj_points.at(i).longitudinal_velocity_mps = 0.0;
+    }
+  }
+}
 
 bool hasZeroVelocity(const TrajectoryPoint & traj_point)
 {
@@ -67,7 +67,7 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
   debug_data_ptr_(std::make_shared<DebugData>()),
   time_keeper_ptr_(std::make_shared<TimeKeeper>())
 {
-  // interface publisher
+  // interface publisherc
   traj_pub_ = create_publisher<Trajectory>("~/output/path", 1);
   virtual_wall_pub_ = create_publisher<MarkerArray>("~/virtual_wall", 1);
   odom_path_pub_ = create_publisher<Path>
@@ -84,6 +84,8 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
   debug_extended_traj_pub_ = create_publisher<Trajectory>("~/debug/extended_traj", 1);
   debug_markers_pub_ = create_publisher<MarkerArray>("~/debug/marker", 1);
   debug_calculation_time_pub_ = create_publisher<StringStamped>("~/debug/calculation_time", 1);
+  debug_traj_pub_ = create_publisher<Trajectory>
+          ("/planning/scenario_planning/lane_driving/motion_planning/debug_trajectory", 1);
 
   {  // parameters
     // parameter for option
@@ -135,8 +137,6 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
   // initialized.
   set_param_res_ = this->add_on_set_parameters_callback(
     std::bind(&ObstacleAvoidancePlanner::onParam, this, std::placeholders::_1));
-
-
 }
 
 rcl_interfaces::msg::SetParametersResult ObstacleAvoidancePlanner::onParam(
@@ -202,65 +202,66 @@ void ObstacleAvoidancePlanner::resetPreviousData()
   prev_optimized_traj_points_ptr_ = nullptr;
 }
 
-void ObstacleAvoidancePlanner::onPath(const Path::SharedPtr path_ptr)
+void ObstacleAvoidancePlanner::onPath(Path::SharedPtr path_ptr)
 {
-    if (!map_odom_tf_buffer_->canTransform("odom", "map", tf2::TimePointZero)){
-        RCLCPP_INFO(get_logger(), "map to odom transform not available yet.");
-        return;
-    }
+  if (!map_odom_tf_buffer_->canTransform("odom", "map", tf2::TimePointZero)){
+    RCLCPP_INFO(get_logger(), "map to odom transform not available yet.");
+    return;
+  }
 
-    transformPathToOdomFrame(path_ptr);
+  transformPathToOdomFrame(path_ptr);
 
-//
-//  time_keeper_ptr_->init();
-//  time_keeper_ptr_->tic(__func__);
-//
-//  // check if data is ready and valid
-//  if (!isDataReady(*path_ptr, *get_clock())) {
-//    return;
-//  }
-//
-//  // 0. return if path is backward
-//  // TODO(murooka): support backward path
-//  const auto is_driving_forward = driving_direction_checker_.isDrivingForward(path_ptr->points);
-//  if (!is_driving_forward) {
-//    RCLCPP_WARN_THROTTLE(
-//      get_logger(), *get_clock(), 5000,
-//      "Backward path is NOT supported. Just converting path to trajectory");
-//
-//    const auto traj_points = trajectory_utils::convertToTrajectoryPoints(path_ptr->points);
-//    const auto output_traj_msg = trajectory_utils::createTrajectory(path_ptr->header, traj_points);
-//    traj_pub_->publish(output_traj_msg);
-//    return;
-//  }
-//
-//  // 1. create planner data
-//  const auto planner_data = createPlannerData(*path_ptr);
-//
-//  // 2. generate optimized trajectory
-//  const auto optimized_traj_points = generateOptimizedTrajectory(planner_data);
-//
-//  // 3. extend trajectory to connect the optimized trajectory and the following path smoothly
-//  auto full_traj_points = extendTrajectory(planner_data.traj_points, optimized_traj_points);
-//
-//  // 4. set zero velocity after stop point
-//  setZeroVelocityAfterStopPoint(full_traj_points);
-//
-//  // 5. publish debug data
-//  publishDebugData(planner_data.header);
-//
-//  time_keeper_ptr_->toc(__func__, "");
-//  *time_keeper_ptr_ << "========================================";
-//  time_keeper_ptr_->endLine();
-//
-//  // publish calculation_time
-//  // NOTE: This function must be called after measuring onPath calculation time
-//  const auto calculation_time_msg = createStringStamped(now(), time_keeper_ptr_->getLog());
-//  debug_calculation_time_pub_->publish(calculation_time_msg);
-//
-//  const auto output_traj_msg =
-//    trajectory_utils::createTrajectory(path_ptr->header, full_traj_points);
-//  traj_pub_->publish(output_traj_msg);
+  odom_path_pub_->publish(*path_ptr);
+
+  time_keeper_ptr_->init();
+  time_keeper_ptr_->tic(__func__);
+
+  // check if data is ready and valid
+  if (!isDataReady(*path_ptr, *get_clock())) {
+    return;
+  }
+
+  // 0. return if path is backward
+  // TODO(murooka): support backward path
+  const auto is_driving_forward = driving_direction_checker_.isDrivingForward(path_ptr->points);
+  if (!is_driving_forward) {
+    RCLCPP_WARN_THROTTLE(
+      get_logger(), *get_clock(), 5000,
+      "Backward path is NOT supported. Just converting path to trajectory");
+
+    const auto traj_points = trajectory_utils::convertToTrajectoryPoints(path_ptr->points);
+    const auto output_traj_msg = trajectory_utils::createTrajectory(path_ptr->header, traj_points);
+    traj_pub_->publish(output_traj_msg);
+    return;
+  }
+
+  // 1. create planner data
+  const auto planner_data = createPlannerData(*path_ptr);
+
+  // 2. generate optimized trajectory
+  const auto optimized_traj_points = generateOptimizedTrajectory(planner_data);
+
+  // 3. extend trajectory to connect the optimized trajectory and the following path smoothly
+  auto full_traj_points = extendTrajectory(planner_data.traj_points, optimized_traj_points);
+
+  // 4. set zero velocity after stop point
+  setZeroVelocityAfterStopPoint(full_traj_points);
+
+  // 5. publish debug data
+  publishDebugData(planner_data.header);
+
+  time_keeper_ptr_->toc(__func__, "");
+  *time_keeper_ptr_ << "========================================";
+  time_keeper_ptr_->endLine();
+
+  // publish calculation_time
+  // NOTE: This function must be called after measuring onPath calculation time
+  const auto calculation_time_msg = createStringStamped(now(), time_keeper_ptr_->getLog());
+  debug_calculation_time_pub_->publish(calculation_time_msg);
+
+  const auto output_traj_msg =
+    trajectory_utils::createTrajectory(path_ptr->header, full_traj_points);
+  traj_pub_->publish(output_traj_msg);
 }
 
 bool ObstacleAvoidancePlanner::isDataReady(const Path & path, rclcpp::Clock clock) const
@@ -580,40 +581,36 @@ void ObstacleAvoidancePlanner::publishDebugData(const Header & header) const
   time_keeper_ptr_->toc(__func__, "  ");
 }
 
-void ObstacleAvoidancePlanner::transformPathToOdomFrame(const Path::SharedPtr path_ptr) const {
+void ObstacleAvoidancePlanner::transformPathToOdomFrame(Path::SharedPtr path_ptr) const {
     geometry_msgs::msg::TransformStamped transform_stamped =
             map_odom_tf_buffer_->lookupTransform("odom", "map", tf2::TimePointZero);
 
-    odom_path_ptr_->header.frame_id="odom";
-    odom_path_ptr_->header.stamp = this->now();
-    odom_path_ptr_->points.clear();
-    odom_path_ptr_->left_bound.clear();
-    odom_path_ptr_->right_bound.clear();
+    path_ptr->header.frame_id="odom";
+    path_ptr->header.stamp = this->now();
 
     for (auto & point: path_ptr->points) {
         autoware_auto_planning_msgs::msg::PathPoint odom_path_point;
-        odom_path_point.is_final = point.is_final;
-        odom_path_point.lateral_velocity_mps = point.lateral_velocity_mps;
-        odom_path_point.heading_rate_rps = point.heading_rate_rps;
-        odom_path_point.longitudinal_velocity_mps = point.longitudinal_velocity_mps;
-        tf2::doTransform(point.pose, odom_path_point.pose, transform_stamped);
-        odom_path_ptr_->points.push_back(odom_path_point);
+        tf2::doTransform(point.pose, point.pose, transform_stamped);
     }
 
     for (auto & left_bound_point : path_ptr->left_bound) {
-        geometry_msgs::msg::Point odom_left_bound_point;
-        tf2::doTransform(left_bound_point, odom_left_bound_point, transform_stamped);
-        odom_path_ptr_->left_bound.push_back(odom_left_bound_point);
+        tf2::doTransform(left_bound_point, left_bound_point, transform_stamped);
     }
 
     for (auto & right_bound_point : path_ptr->right_bound) {
-        geometry_msgs::msg::Point odom_right_bound_point;
-        tf2::doTransform(right_bound_point, odom_right_bound_point, transform_stamped);
-        odom_path_ptr_->right_bound.push_back(odom_right_bound_point);
+        tf2::doTransform(right_bound_point, right_bound_point, transform_stamped);
     }
+}
 
-    RCLCPP_INFO(this->get_logger(), "Publish /planning/scenario_planning/lane_driving/motion_planning/path.");
-    odom_path_pub_->publish(*odom_path_ptr_);
+void ObstacleAvoidancePlanner::convertTrajectoryPointsToMessage
+(const std::vector<TrajectoryPoint> &traj_points) const {
+    auto traj_msg_ptr = std::make_unique<Trajectory>();
+    traj_msg_ptr->header.frame_id = "odom";
+    traj_msg_ptr->header.stamp = this->now();
+    for (auto & traj_point : traj_points){
+        traj_msg_ptr->points.push_back(traj_point);
+    }
+    debug_traj_pub_->publish(*traj_msg_ptr);
 }
 }  // namespace obstacle_avoidance_planner
 
