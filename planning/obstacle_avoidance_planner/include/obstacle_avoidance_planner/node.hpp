@@ -105,7 +105,6 @@ protected:  // for the static_centerline_optimizer package
   OnSetParametersCallbackHandle::SharedPtr set_param_res_;
 
   // tf
-  geometry_msgs::msg::TransformStamped transform_stamped_;
   std::shared_ptr<tf2_ros::Buffer> map_odom_tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> map_odom_tf_listener_;
 

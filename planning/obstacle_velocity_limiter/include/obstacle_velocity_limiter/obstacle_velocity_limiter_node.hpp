@@ -71,8 +71,8 @@ private:
   rclcpp::Subscription<autoware_auto_mapping_msgs::msg::HADMapBin>::SharedPtr map_sub_;
 
   // cached inputs
-  PredictedObjects::ConstSharedPtr dynamic_obstacles_ptr_;
-  OccupancyGrid::ConstSharedPtr occupancy_grid_ptr_;
+  PredictedObjects::SharedPtr dynamic_obstacles_ptr_;
+  OccupancyGrid::SharedPtr occupancy_grid_ptr_;
   PointCloud::ConstSharedPtr pointcloud_ptr_;
   lanelet::LaneletMapPtr lanelet_map_ptr_{new lanelet::LaneletMap};
   multilinestring_t static_map_obstacles_;
@@ -89,6 +89,14 @@ private:
 
   OnSetParametersCallbackHandle::SharedPtr set_param_res_;
 
+  // tf
+  std::shared_ptr<tf2_ros::Buffer> map_odom_tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> map_odom_tf_listener_;
+
+  // transformed message publishers
+  rclcpp::Publisher<OccupancyGrid>::SharedPtr occupancy_grid_pub_;
+  rclcpp::Publisher<PredictedObjects>::SharedPtr dynamic_obstacles_pub_;
+
   /// @brief callback for parameter updates
   /// @param[in] parameters updated parameters and their new values
   /// @return result of parameter update
@@ -103,6 +111,8 @@ private:
   /// @param[in] ego_idx trajectory index closest to the current ego pose
   /// @return true if the inputs are valid
   bool validInputs(const boost::optional<size_t> & ego_idx);
+
+  void transformInputsToOdomFrame();
 };
 }  // namespace obstacle_velocity_limiter
 
