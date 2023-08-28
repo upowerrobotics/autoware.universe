@@ -67,7 +67,7 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
   debug_data_ptr_(std::make_shared<DebugData>()),
   time_keeper_ptr_(std::make_shared<TimeKeeper>())
 {
-  // interface publisherc
+  // interface publisher
   traj_pub_ = create_publisher<Trajectory>("~/output/path", 1);
   virtual_wall_pub_ = create_publisher<MarkerArray>("~/virtual_wall", 1);
   odom_path_pub_ = create_publisher<Path>
