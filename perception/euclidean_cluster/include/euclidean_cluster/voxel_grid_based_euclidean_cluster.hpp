@@ -31,7 +31,8 @@ public:
   VoxelGridBasedEuclideanCluster(bool use_height, int min_cluster_size, int max_cluster_size);
   VoxelGridBasedEuclideanCluster(
     bool use_height, int min_cluster_size, int max_cluster_size, float tolerance,
-    float voxel_leaf_size, int min_points_number_per_voxel);
+    float voxel_leaf_size, int min_points_number_per_voxel,
+    float max_x, float min_x, float max_y, float min_y, float max_z, float min_z);
   bool cluster(
     const pcl::PointCloud<pcl::PointXYZ>::ConstPtr & pointcloud,
     std::vector<pcl::PointCloud<pcl::PointXYZ>> & clusters) override;
@@ -47,6 +48,12 @@ private:
   float tolerance_;
   float voxel_leaf_size_;
   int min_points_number_per_voxel_;
+  float max_x_;
+  float min_x_;
+  float max_y_;
+  float min_y_;
+  float max_z_;
+  float min_z_;
 };
 
 }  // namespace euclidean_cluster

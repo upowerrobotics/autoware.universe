@@ -36,6 +36,7 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
   rclcpp::Publisher<autoware_auto_perception_msgs::msg::PointClusters>::SharedPtr point_clusters_pub_;
+  rclcpp::Publisher<autoware_auto_perception_msgs::msg::DetectedObjects>::SharedPtr det_objs_pub_;
 
   std::shared_ptr<VoxelGridBasedEuclideanCluster> cluster_;
 };
