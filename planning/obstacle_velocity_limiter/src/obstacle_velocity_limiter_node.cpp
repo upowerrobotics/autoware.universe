@@ -60,16 +60,10 @@ ObstacleVelocityLimiterNode::ObstacleVelocityLimiterNode(const rclcpp::NodeOptio
   sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
     "~/input/odometry", rclcpp::QoS{1},
     [this](const nav_msgs::msg::Odometry::ConstSharedPtr msg) { current_odometry_ptr_ = msg; });
-//  map_sub_ = create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
-//    "~/input/map", rclcpp::QoS{1}.transient_local(),
-//    [this](const autoware_auto_mapping_msgs::msg::HADMapBin::ConstSharedPtr msg) {
-//      lanelet::utils::conversion::fromBinMsg(*msg, lanelet_map_ptr_);
-//      static_map_obstacles_ =
-//        extractStaticObstacles(*lanelet_map_ptr_, obstacle_params_.static_map_tags);
-//    });
-    map_sub_ = create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
-            "~/input/map", rclcpp::QoS{1}.transient_local(),
-            std::bind(&ObstacleVelocityLimiterNode::onLanelet2Map, this, _1));
+
+  map_sub_ = create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
+          "~/input/map", rclcpp::QoS{1}.transient_local(),
+          std::bind(&ObstacleVelocityLimiterNode::onLanelet2Map, this, _1));
 
   pub_trajectory_ = create_publisher<Trajectory>("~/output/trajectory", 1);
   pub_debug_markers_ =
@@ -97,10 +91,6 @@ ObstacleVelocityLimiterNode::ObstacleVelocityLimiterNode(const rclcpp::NodeOptio
 
   dynamic_obstacles_pub_ = create_publisher<PredictedObjects>(
           "/planning/scenario_planning/lane_driving/motion_planning/predicted_objects", 1);
-
-  map_pub_ = create_publisher<autoware_auto_mapping_msgs::msg::HADMapBin>(
-            "/planning/scenario_planning/lane_driving/motion_planning/map/vector_map",
-            rclcpp::QoS{1}.transient_local());
 }
 
 rcl_interfaces::msg::SetParametersResult ObstacleVelocityLimiterNode::onParameter(
@@ -303,32 +293,7 @@ void ObstacleVelocityLimiterNode::transformInputsToOdomFrame() {
     dynamic_obstacles_ptr_->header.stamp = this->now();
     dynamic_obstacles_pub_->publish(*dynamic_obstacles_ptr_);
 
-    //transform lanelet2 map
-    if (!lanelet_map_ptr_->empty()){
-        autoware_auto_mapping_msgs::msg::HADMapBin map_bin_msg;
-        map_bin_msg.header.frame_id = "odom";
-        map_bin_msg.header.stamp = this->now();
-        map_bin_msg.format_version = {};
-
-        for (lanelet::Point3d& point : lanelet_map_ptr_->pointLayer){
-            transformLanelet2Point(point, transform_stamped);
-        }
-
-        lanelet::utils::conversion::toBinMsg(lanelet_map_ptr_, &map_bin_msg);
-        map_pub_->publish(map_bin_msg);
-    }
-}
-
-void ObstacleVelocityLimiterNode::transformLanelet2Point(
-        lanelet::Point3d &point, const geometry_msgs::msg::TransformStamped &transform_stamped) {
-    geometry_msgs::msg::Point point_tf;
-    point_tf.x = point.x();
-    point_tf.y = point.y();
-    point_tf.z = point.z();
-    tf2::doTransform(point_tf, point_tf, transform_stamped);
-    point.x() = point_tf.x;
-    point.y() = point_tf.y;
-    point.z() = point_tf.z;
+    // TODO tranform lanelet2 map to odom frame
 }
 }  // namespace obstacle_velocity_limiter
 
