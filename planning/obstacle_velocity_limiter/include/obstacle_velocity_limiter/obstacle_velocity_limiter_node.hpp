@@ -35,6 +35,7 @@
 #include <boost/optional.hpp>
 
 #include <lanelet2_core/LaneletMap.h>
+#include <lanelet2_core/geometry/Point.h>
 
 #include <memory>
 #include <optional>
@@ -97,6 +98,10 @@ private:
   rclcpp::Publisher<OccupancyGrid>::SharedPtr occupancy_grid_pub_;
   rclcpp::Publisher<PredictedObjects>::SharedPtr dynamic_obstacles_pub_;
 
+  // lanelet2 map
+  rclcpp::Publisher<autoware_auto_mapping_msgs::msg::HADMapBin>::SharedPtr map_pub_;
+
+
   /// @brief callback for parameter updates
   /// @param[in] parameters updated parameters and their new values
   /// @return result of parameter update
@@ -113,6 +118,11 @@ private:
   bool validInputs(const boost::optional<size_t> & ego_idx);
 
   void transformInputsToOdomFrame();
+
+  void transformLanelet2Point(lanelet::Point3d &point, const geometry_msgs::msg::TransformStamped &transform_stamped);
+
+  void onLanelet2Map(autoware_auto_mapping_msgs::msg::HADMapBin::SharedPtr msg);
+
 };
 }  // namespace obstacle_velocity_limiter
 
