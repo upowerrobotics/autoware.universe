@@ -112,12 +112,12 @@ bool VoxelGridBasedEuclideanCluster::cluster(
       }
       Eigen::Vector4f cluster_centroid;
       pcl::compute3DCentroid(cluster, cluster_centroid);
-      if (cluster_centroid[0] < min_x_ || cluster_centroid[0] > max_x_ ||
-          cluster_centroid[1] < min_y_ || cluster_centroid[1] > max_y_ ||
-          cluster_centroid[2] < min_z_ || cluster_centroid[2] > max_z_) {
-        std::cerr << cluster_centroid[0] << "-" << cluster_centroid[1] << "-" << cluster_centroid[2] << std::endl;
-        continue;
-      }
+      // if (cluster_centroid[0] < min_x_ || cluster_centroid[0] > max_x_ ||
+      //     cluster_centroid[1] < min_y_ || cluster_centroid[1] > max_y_ ||
+      //     cluster_centroid[2] < min_z_ || cluster_centroid[2] > max_z_) {
+      //   std::cerr << cluster_centroid[0] << "-" << cluster_centroid[1] << "-" << cluster_centroid[2] << std::endl;
+      //   continue;
+      // }
       clusters.push_back(cluster);
       clusters.back().width = cluster.points.size();
       clusters.back().height = 1;
