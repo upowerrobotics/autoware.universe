@@ -81,16 +81,12 @@ ObstacleVelocityLimiterNode::ObstacleVelocityLimiterNode(const rclcpp::NodeOptio
     add_on_set_parameters_callback([this](const auto & params) { return onParameter(params); });
 
   // transform
-  rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
-  map_odom_tf_buffer_ = std::make_shared<tf2_ros::Buffer>(clock);
+  map_odom_tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   map_odom_tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*map_odom_tf_buffer_);
 
   // transformed msg publishers
-  occupancy_grid_pub_ = create_publisher<OccupancyGrid>(
-          "/planning/scenario_planning/lane_driving/motion_planning/occupancy_grid_map/map", 1);
-
-  dynamic_obstacles_pub_ = create_publisher<PredictedObjects>(
-          "/planning/scenario_planning/lane_driving/motion_planning/predicted_objects", 1);
+  occupancy_grid_pub_ = create_publisher<OccupancyGrid>("~/output/occupancy_grid", 1);
+  dynamic_obstacles_pub_ = create_publisher<PredictedObjects>("~/output/dynamic_obstacles", 1);
 }
 
 rcl_interfaces::msg::SetParametersResult ObstacleVelocityLimiterNode::onParameter(

@@ -84,8 +84,7 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
   debug_extended_traj_pub_ = create_publisher<Trajectory>("~/debug/extended_traj", 1);
   debug_markers_pub_ = create_publisher<MarkerArray>("~/debug/marker", 1);
   debug_calculation_time_pub_ = create_publisher<StringStamped>("~/debug/calculation_time", 1);
-  debug_traj_pub_ = create_publisher<Trajectory>
-          ("/planning/scenario_planning/lane_driving/motion_planning/debug_trajectory", 1);
+  debug_traj_pub_ = create_publisher<Trajectory>("~/debug/traj", 1);
 
   {  // parameters
     // parameter for option
@@ -113,10 +112,8 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
     traj_param_ = TrajectoryParam(this);
 
     // transform
-    rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
-    map_odom_tf_buffer_ = std::make_shared<tf2_ros::Buffer>(clock);
+    map_odom_tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     map_odom_tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*map_odom_tf_buffer_);
-    odom_path_ptr_ = std::make_shared<Path>();
   }
 
   // create core algorithm pointers with parameter declaration
@@ -595,7 +592,6 @@ void ObstacleAvoidancePlanner::transformPathToOdomFrame(Path::SharedPtr path_ptr
     path_ptr->header.stamp = this->now();
 
     for (auto & point: path_ptr->points) {
-        autoware_auto_planning_msgs::msg::PathPoint odom_path_point;
         tf2::doTransform(point.pose, point.pose, transform_stamped);
     }
 
@@ -610,13 +606,13 @@ void ObstacleAvoidancePlanner::transformPathToOdomFrame(Path::SharedPtr path_ptr
 
 void ObstacleAvoidancePlanner::convertTrajectoryPointsToMessage
 (const std::vector<TrajectoryPoint> &traj_points) const {
-    auto traj_msg_ptr = std::make_unique<Trajectory>();
-    traj_msg_ptr->header.frame_id = "odom";
-    traj_msg_ptr->header.stamp = this->now();
+    Trajectory traj_msg;
+    traj_msg.header.frame_id = "odom";
+    traj_msg.header.stamp = this->now();
     for (auto & traj_point : traj_points){
-        traj_msg_ptr->points.push_back(traj_point);
+        traj_msg.points.push_back(traj_point);
     }
-    debug_traj_pub_->publish(*traj_msg_ptr);
+    debug_traj_pub_->publish(traj_msg);
 }
 }  // namespace obstacle_avoidance_planner
 

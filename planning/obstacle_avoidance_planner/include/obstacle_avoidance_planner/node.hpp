@@ -110,7 +110,6 @@ protected:  // for the static_centerline_optimizer package
 
     // subscriber callback function
   void onPath(Path::SharedPtr path_ptr);
-  std::shared_ptr<Path> odom_path_ptr_;
 
   // reset functions
   void initializePlanning();
