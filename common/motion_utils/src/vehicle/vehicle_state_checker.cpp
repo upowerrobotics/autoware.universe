@@ -84,7 +84,7 @@ VehicleStopChecker::VehicleStopChecker(rclcpp::Node * node)
   using std::placeholders::_1;
 
   sub_odom_ = node->create_subscription<Odometry>(
-    "/localization/kinematic_state", rclcpp::QoS(1),
+    "/localization/absolute_odom", rclcpp::QoS(1),
     std::bind(&VehicleStopChecker::onOdom, this, _1));
 }
 
