@@ -71,6 +71,7 @@ MissionPlanner::MissionPlanner(const rclcpp::NodeOptions & options)
   tf_buffer_(get_clock()),
   tf_listener_(tf_buffer_)
 {
+  map_odom_topic_ = declare_parameter<std::string>("map_odom_topic", "/localization/kinematic_state");
   map_frame_ = declare_parameter<std::string>("map_frame");
 
   planner_ = plugin_loader_.createSharedInstance("mission_planner::lanelet2::DefaultPlanner");
@@ -78,7 +79,7 @@ MissionPlanner::MissionPlanner(const rclcpp::NodeOptions & options)
 
   odometry_ = nullptr;
   sub_odometry_ = create_subscription<Odometry>(
-    "/localization/absolute_odom", rclcpp::QoS(1),
+    map_odom_topic_.c_str(), rclcpp::QoS(1),
     std::bind(&MissionPlanner::on_odometry, this, std::placeholders::_1));
 
   const auto durable_qos = rclcpp::QoS(1).transient_local();

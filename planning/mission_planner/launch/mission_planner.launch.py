@@ -47,6 +47,7 @@ def generate_launch_description():
         parameters=[
             LaunchConfiguration("mission_planner_param_path"),
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
+            {"map_odom_topic": "/localization/absolute_odom"},
             {"map_frame": "map"},
         ],
     )
