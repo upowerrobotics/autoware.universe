@@ -195,6 +195,8 @@ void convertPointCloudClusters2DetectedObjects(
     bb_rotation.z = q_inv.z();
     bb_rotation.w = q_inv.w();
 
+    // set default existence_probability
+    detected_object.existence_probability = 1.0f;
     // set the position of the detected object bounding box
     detected_object.kinematics.pose_with_covariance.pose.position = bb_position;
     detected_object.kinematics.has_position_covariance = false;
