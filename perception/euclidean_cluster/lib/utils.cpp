@@ -190,10 +190,19 @@ void convertPointCloudClusters2DetectedObjects(
 
     // get the bounding box rotation
     geometry_msgs::msg::Quaternion bb_rotation;
-    bb_rotation.x = q_inv.x();
-    bb_rotation.y = q_inv.y();
-    bb_rotation.z = q_inv.z();
-    bb_rotation.w = q_inv.w();
+
+    // compute yaw angle
+    double theta_z = atan2(q_inv.z(), q_inv.w());
+
+    // construct a quaternion that only contains yaw angle (z-axis rotation)
+    Eigen::Quaternionf orientation_z{0.0f, 0.0f,
+      static_cast<float>(cos(theta_z)),
+      static_cast<float>(cos(theta_z))};
+
+    bb_rotation.x = orientation_z.x();
+    bb_rotation.y = orientation_z.y();
+    bb_rotation.z = orientation_z.z();
+    bb_rotation.w = orientation_z.w();
 
     // set default existence_probability
     detected_object.existence_probability = 1.0f;
