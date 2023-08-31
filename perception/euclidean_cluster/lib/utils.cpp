@@ -196,7 +196,7 @@ void convertPointCloudClusters2DetectedObjects(
 
     // construct a quaternion that only contains yaw angle (z-axis rotation)
     Eigen::Quaternionf orientation_z{0.0f, 0.0f,
-      static_cast<float>(cos(theta_z)),
+      static_cast<float>(sin(theta_z)),
       static_cast<float>(cos(theta_z))};
 
     bb_rotation.x = orientation_z.x();
