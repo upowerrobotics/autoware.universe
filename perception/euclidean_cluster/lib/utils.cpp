@@ -133,17 +133,8 @@ void convertPointCloudClusters2DetectedObjects(
       continue;
 
     // create point cloud for bounding box creation
-    pcl::PointCloud<pcl::PointXYZ>::Ptr obb_cluster_ptr(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointXYZ pt_no_height;
-    // add points to the point cloud while also removing their z component
-    // this is to prevent non-zero components in roll and pitch
-    for (const auto & pt : cluster.points)
-    {
-      pt_no_height.x = pt.x;
-      pt_no_height.y = pt.y;
-      pt_no_height.z = 0.0f;
-      obb_cluster_ptr->push_back(pt_no_height);
-    }
+    pcl::PointCloud<pcl::PointXYZ>::Ptr obb_cluster_ptr(clusters);
+
     // compute the centroid for the clustered point cloud
     Eigen::Vector4f pcaCentroid;
     pcl::compute3DCentroid(*obb_cluster_ptr, pcaCentroid);
