@@ -195,6 +195,10 @@ void convertPointCloudClusters2DetectedObjects(
     auto euler = q_inv.toRotationMatrix().eulerAngles(2, 1, 0);
     double yaw = euler[0];
 
+    // restrict yaw angle to [-90, 90]
+    yaw = yaw > 90.0 ? yaw - 90.0 : yaw;
+    yaw = yaw < -90.0 ? yaw + 90.0 : yaw;
+
     // assign the rotation of the bounding box (0, 0, sin(yaw/2), cos(yaw/2))
     bb_rotation.x = 0.0f;
     bb_rotation.y = 0.0f;
