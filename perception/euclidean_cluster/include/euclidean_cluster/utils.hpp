@@ -28,6 +28,7 @@
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
 #include <pcl/common/pca.h>
+#include <math.h>
 
 #include <vector>
 
