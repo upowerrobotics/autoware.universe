@@ -59,7 +59,6 @@ private:
   pluginlib::ClassLoader<PlannerPlugin> plugin_loader_;
   std::shared_ptr<PlannerPlugin> planner_;
   std::string map_frame_;
-  std::string map_odom_topic_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   PoseStamped transform_pose(const PoseStamped & input);

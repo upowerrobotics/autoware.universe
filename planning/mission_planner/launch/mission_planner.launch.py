@@ -40,6 +40,7 @@ def generate_launch_description():
         name="mission_planner",
         output="screen",
         remappings=[
+            ("input/odom", LaunchConfiguration("map_frame_odom")),
             ("input/modified_goal", LaunchConfiguration("modified_goal_topic_name")),
             ("input/vector_map", LaunchConfiguration("map_topic_name")),
             ("debug/route_marker", LaunchConfiguration("visualization_topic_name")),
@@ -47,7 +48,6 @@ def generate_launch_description():
         parameters=[
             LaunchConfiguration("mission_planner_param_path"),
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
-            {"map_odom_topic": "/localization/absolute_odom"},
             {"map_frame": "map"},
         ],
     )
