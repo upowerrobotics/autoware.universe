@@ -130,7 +130,7 @@ void convertPointCloudClusters2DetectedObjects(
     // remove clusters that too large
     if (dimensions.z() > 5.0f || dimensions.z() < 1.0f
       || dimensions.x() > 20.0f || dimensions.y() > 20.0f
-      || dimensions.x() * dimensions.y() / dimensions.z() > 10.0f
+      || dimensions.x() * dimensions.y() > 20.0f
       || detected_object.kinematics.pose_with_covariance.pose.position.z > 5.0f)
       continue;
 
