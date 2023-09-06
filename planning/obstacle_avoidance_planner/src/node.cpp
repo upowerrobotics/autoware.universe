@@ -112,7 +112,7 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
     traj_param_ = TrajectoryParam(this);
 
     // transform
-    map_odom_tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    map_odom_tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     map_odom_tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*map_odom_tf_buffer_);
   }
 

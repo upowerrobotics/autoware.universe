@@ -81,7 +81,7 @@ ObstacleVelocityLimiterNode::ObstacleVelocityLimiterNode(const rclcpp::NodeOptio
     add_on_set_parameters_callback([this](const auto & params) { return onParameter(params); });
 
   // transform
-  map_odom_tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  map_odom_tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   map_odom_tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*map_odom_tf_buffer_);
 
   // transformed msg publishers

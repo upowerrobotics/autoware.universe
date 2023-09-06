@@ -91,7 +91,7 @@ private:
   OnSetParametersCallbackHandle::SharedPtr set_param_res_;
 
   // tf
-  std::shared_ptr<tf2_ros::Buffer> map_odom_tf_buffer_;
+  std::unique_ptr<tf2_ros::Buffer> map_odom_tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> map_odom_tf_listener_;
 
   // transformed message publishers
