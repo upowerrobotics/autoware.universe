@@ -21,6 +21,8 @@
 #include <autoware_auto_perception_msgs/msg/detected_object.hpp>
 #include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
 
+#include <math.h>
+
 namespace euclidean_cluster
 {
 geometry_msgs::msg::Point getCentroid(const sensor_msgs::msg::PointCloud2 & pointcloud)
@@ -196,8 +198,8 @@ void convertPointCloudClusters2DetectedObjects(
     double yaw = euler[0];
 
     // restrict yaw angle to [-90, 90]
-    yaw = yaw > 90.0 ? yaw - 180.0 : yaw;
-    yaw = yaw < -90.0 ? yaw + 180.0 : yaw;
+    if (yaw * 180.0 / M_PI > 90.0) yaw -= M_PI;
+    if (yaw * 180.0 / M_PI < -90.0) yaw += M_PI;
 
     // assign the rotation of the bounding box (0, 0, sin(yaw/2), cos(yaw/2))
     bb_rotation.x = 0.0f;
