@@ -70,10 +70,13 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
   // interface publisher
   traj_pub_ = create_publisher<Trajectory>("~/output/path", 1);
   virtual_wall_pub_ = create_publisher<MarkerArray>("~/virtual_wall", 1);
+  odom_path_pub_ = create_publisher<Path>
+          ("/planning/scenario_planning/lane_driving/motion_planning/path", 1);
 
   // interface subscriber
   path_sub_ = create_subscription<Path>(
     "~/input/path", 1, std::bind(&ObstacleAvoidancePlanner::onPath, this, std::placeholders::_1));
+
   odom_sub_ = create_subscription<Odometry>(
     "~/input/odometry", 1, [this](const Odometry::SharedPtr msg) { ego_state_ptr_ = msg; });
 
@@ -81,6 +84,7 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
   debug_extended_traj_pub_ = create_publisher<Trajectory>("~/debug/extended_traj", 1);
   debug_markers_pub_ = create_publisher<MarkerArray>("~/debug/marker", 1);
   debug_calculation_time_pub_ = create_publisher<StringStamped>("~/debug/calculation_time", 1);
+  debug_traj_pub_ = create_publisher<Trajectory>("~/debug/traj", 1);
 
   {  // parameters
     // parameter for option
@@ -106,6 +110,10 @@ ObstacleAvoidancePlanner::ObstacleAvoidancePlanner(const rclcpp::NodeOptions & n
 
     // parameters for trajectory
     traj_param_ = TrajectoryParam(this);
+
+    // transform
+    map_odom_tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    map_odom_tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*map_odom_tf_buffer_);
   }
 
   // create core algorithm pointers with parameter declaration
@@ -191,8 +199,23 @@ void ObstacleAvoidancePlanner::resetPreviousData()
   prev_optimized_traj_points_ptr_ = nullptr;
 }
 
-void ObstacleAvoidancePlanner::onPath(const Path::SharedPtr path_ptr)
+void ObstacleAvoidancePlanner::onPath(Path::SharedPtr path_ptr)
 {
+  if (!ego_state_ptr_){
+      RCLCPP_INFO(get_logger(), "Waiting for ego pose and twist");
+      return;
+  }
+
+  if (ego_state_ptr_->header.frame_id=="odom"){
+      if (!map_odom_tf_buffer_->canTransform("odom", "map", tf2::TimePointZero)){
+          RCLCPP_INFO(get_logger(), "map to odom transform not available yet.");
+          return;
+      }
+      transformPathToOdomFrame(path_ptr);
+  }
+
+  odom_path_pub_->publish(*path_ptr);
+
   time_keeper_ptr_->init();
   time_keeper_ptr_->tic(__func__);
 
@@ -559,6 +582,37 @@ void ObstacleAvoidancePlanner::publishDebugData(const Header & header) const
   debug_extended_traj_pub_->publish(debug_extended_traj);
 
   time_keeper_ptr_->toc(__func__, "  ");
+}
+
+void ObstacleAvoidancePlanner::transformPathToOdomFrame(Path::SharedPtr path_ptr) const {
+    geometry_msgs::msg::TransformStamped transform_stamped =
+            map_odom_tf_buffer_->lookupTransform("odom", "map", tf2::TimePointZero);
+
+    path_ptr->header.frame_id="odom";
+    path_ptr->header.stamp = this->now();
+
+    for (auto & point: path_ptr->points) {
+        tf2::doTransform(point.pose, point.pose, transform_stamped);
+    }
+
+    for (auto & left_bound_point : path_ptr->left_bound) {
+        tf2::doTransform(left_bound_point, left_bound_point, transform_stamped);
+    }
+
+    for (auto & right_bound_point : path_ptr->right_bound) {
+        tf2::doTransform(right_bound_point, right_bound_point, transform_stamped);
+    }
+}
+
+void ObstacleAvoidancePlanner::convertTrajectoryPointsToMessage
+(const std::vector<TrajectoryPoint> &traj_points) const {
+    Trajectory traj_msg;
+    traj_msg.header.frame_id = "odom";
+    traj_msg.header.stamp = this->now();
+    for (auto & traj_point : traj_points){
+        traj_msg.points.push_back(traj_point);
+    }
+    debug_traj_pub_->publish(traj_msg);
 }
 }  // namespace obstacle_avoidance_planner
 

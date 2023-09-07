@@ -38,7 +38,7 @@ def generate_launch_description():
         output="screen",
         remappings=[
             ("~/input/trajectory", LaunchConfiguration("input_trajectory")),
-            ("~/input/kinematics", LaunchConfiguration("odom_topic_name")),
+            ("~/input/kinematics", LaunchConfiguration("odom_topic")),
             ("~/output/trajectory", LaunchConfiguration("output_trajectory")),
             ("~/output/validation_status", "~/validation_status"),
         ],

@@ -77,7 +77,7 @@ def launch_setup(context, *args, **kwargs):
             # Topic for setting maximum speed from the outside (input topic)
             ("~/output/current_velocity_limit_mps",
              "/planning/scenario_planning/current_max_velocity"),
-            ("/localization/kinematic_state", LaunchConfiguration("odom_topic_name"))
+            ("/localization/kinematic_state", LaunchConfiguration("odom_topic"))
         ],
         parameters=[
             LaunchConfiguration("common_param_path"),

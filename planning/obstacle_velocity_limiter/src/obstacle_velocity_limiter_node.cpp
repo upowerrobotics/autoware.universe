@@ -44,27 +44,26 @@ ObstacleVelocityLimiterNode::ObstacleVelocityLimiterNode(const rclcpp::NodeOptio
   obstacle_params_(*this),
   velocity_params_(*this)
 {
+  using std::placeholders::_1;
+
   sub_trajectory_ = create_subscription<Trajectory>(
     "~/input/trajectory", 1, [this](const Trajectory::ConstSharedPtr msg) { onTrajectory(msg); });
   sub_occupancy_grid_ = create_subscription<OccupancyGrid>(
     "~/input/occupancy_grid", 1,
-    [this](const OccupancyGrid::ConstSharedPtr msg) { occupancy_grid_ptr_ = msg; });
+    [this](const OccupancyGrid::SharedPtr msg) { occupancy_grid_ptr_ = msg; });
   sub_pointcloud_ = create_subscription<PointCloud>(
     "~/input/obstacle_pointcloud", rclcpp::QoS(1).best_effort(),
     [this](const PointCloud::ConstSharedPtr msg) { pointcloud_ptr_ = msg; });
   sub_objects_ = create_subscription<PredictedObjects>(
     "~/input/dynamic_obstacles", 1,
-    [this](const PredictedObjects::ConstSharedPtr msg) { dynamic_obstacles_ptr_ = msg; });
+    [this](const PredictedObjects::SharedPtr msg) { dynamic_obstacles_ptr_ = msg; });
   sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
     "~/input/odometry", rclcpp::QoS{1},
     [this](const nav_msgs::msg::Odometry::ConstSharedPtr msg) { current_odometry_ptr_ = msg; });
+
   map_sub_ = create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
-    "~/input/map", rclcpp::QoS{1}.transient_local(),
-    [this](const autoware_auto_mapping_msgs::msg::HADMapBin::ConstSharedPtr msg) {
-      lanelet::utils::conversion::fromBinMsg(*msg, lanelet_map_ptr_);
-      static_map_obstacles_ =
-        extractStaticObstacles(*lanelet_map_ptr_, obstacle_params_.static_map_tags);
-    });
+          "~/input/map", rclcpp::QoS{1}.transient_local(),
+          std::bind(&ObstacleVelocityLimiterNode::onLanelet2Map, this, _1));
 
   pub_trajectory_ = create_publisher<Trajectory>("~/output/trajectory", 1);
   pub_debug_markers_ =
@@ -80,6 +79,14 @@ ObstacleVelocityLimiterNode::ObstacleVelocityLimiterNode(const rclcpp::NodeOptio
 
   set_param_res_ =
     add_on_set_parameters_callback([this](const auto & params) { return onParameter(params); });
+
+  // transform
+  map_odom_tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  map_odom_tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*map_odom_tf_buffer_);
+
+  // transformed msg publishers
+  occupancy_grid_pub_ = create_publisher<OccupancyGrid>("~/output/occupancy_grid", 1);
+  dynamic_obstacles_pub_ = create_publisher<PredictedObjects>("~/output/dynamic_obstacles", 1);
 }
 
 rcl_interfaces::msg::SetParametersResult ObstacleVelocityLimiterNode::onParameter(
@@ -173,7 +180,17 @@ void ObstacleVelocityLimiterNode::onTrajectory(const Trajectory::ConstSharedPtr 
   const auto t_start = std::chrono::system_clock::now();
   const auto ego_idx =
     motion_utils::findNearestIndex(msg->points, current_odometry_ptr_->pose.pose);
+
   if (!validInputs(ego_idx)) return;
+
+  if (current_odometry_ptr_->header.frame_id == "odom"){
+      if (!map_odom_tf_buffer_->canTransform("odom", "map", tf2::TimePointZero)){
+          RCLCPP_INFO(get_logger(), "map to odom transform not available yet.");
+          return;
+      }
+      transformInputsToOdomFrame();
+  }
+
   auto original_traj = *msg;
   if (preprocessing_params_.calculate_steering_angles)
     calculateSteeringAngles(original_traj, projection_params_.wheel_base);
@@ -244,6 +261,35 @@ bool ObstacleVelocityLimiterNode::validInputs(const boost::optional<size_t> & eg
       get_logger(), *get_clock(), one_sec, "Current ego velocity not yet received");
 
   return occupancy_grid_ptr_ && dynamic_obstacles_ptr_ && ego_idx && current_odometry_ptr_;
+}
+
+void ObstacleVelocityLimiterNode::onLanelet2Map(autoware_auto_mapping_msgs::msg::HADMapBin::SharedPtr msg){
+
+    lanelet::utils::conversion::fromBinMsg(*msg, lanelet_map_ptr_);
+
+    if (msg->header.frame_id == "map"){
+        extractStaticObstacles(*lanelet_map_ptr_, obstacle_params_.static_map_tags);
+        return;
+    }
+}
+
+void ObstacleVelocityLimiterNode::transformInputsToOdomFrame() {
+    geometry_msgs::msg::TransformStamped transform_stamped =
+            map_odom_tf_buffer_->lookupTransform("odom", "map", tf2::TimePointZero);
+
+    // transform occupancy grid
+    occupancy_grid_ptr_->header.frame_id = "odom";
+    occupancy_grid_ptr_->header.stamp = this->now();
+    tf2::doTransform(occupancy_grid_ptr_->info.origin,
+                     occupancy_grid_ptr_->info.origin, transform_stamped);
+    occupancy_grid_pub_->publish(*occupancy_grid_ptr_);
+
+    // transform dynamic obstacles
+    dynamic_obstacles_ptr_->header.frame_id = "odom";
+    dynamic_obstacles_ptr_->header.stamp = this->now();
+    dynamic_obstacles_pub_->publish(*dynamic_obstacles_ptr_);
+
+    // TODO tranform lanelet2 map to odom frame
 }
 }  // namespace obstacle_velocity_limiter
 
