@@ -30,9 +30,15 @@ VoxelGridBasedEuclideanClusterNode::VoxelGridBasedEuclideanClusterNode(
   const float tolerance = this->declare_parameter("tolerance", rclcpp::PARAMETER_DOUBLE).get<float_t>();
   const float voxel_leaf_size = this->declare_parameter("voxel_leaf_size", rclcpp::PARAMETER_DOUBLE).get<float_t>();
   const int min_points_number_per_voxel = this->declare_parameter("min_points_number_per_voxel", rclcpp::PARAMETER_INTEGER).get<uint32_t>();
+  const float max_x = this->declare_parameter("max_x", 999.0);
+  const float min_x = this->declare_parameter("min_x", -999.0);
+  const float max_y = this->declare_parameter("max_y", 999.0);
+  const float min_y = this->declare_parameter("min_y", -999.0);
+  const float max_z = this->declare_parameter("max_z", 999.0);
+  const float min_z = this->declare_parameter("min_z", -999.0);
   cluster_ = std::make_shared<VoxelGridBasedEuclideanCluster>(
     use_height, min_cluster_size, max_cluster_size, tolerance, voxel_leaf_size,
-    min_points_number_per_voxel);
+    min_points_number_per_voxel, max_x, min_x, max_y, min_y, max_z, min_z);
 
   using std::placeholders::_1;
   pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -40,6 +46,8 @@ VoxelGridBasedEuclideanClusterNode::VoxelGridBasedEuclideanClusterNode(
     std::bind(&VoxelGridBasedEuclideanClusterNode::onPointCloud, this, _1));
   point_clusters_pub_ = this->create_publisher<autoware_auto_perception_msgs::msg::PointClusters>(
     "output", rclcpp::QoS{1});
+  det_objs_pub_ = this->create_publisher<autoware_auto_perception_msgs::msg::DetectedObjects>(
+    "euclidean_detected_objects", rclcpp::QoS{1});
 }
 
 void VoxelGridBasedEuclideanClusterNode::onPointCloud(
@@ -56,7 +64,12 @@ void VoxelGridBasedEuclideanClusterNode::onPointCloud(
   // construct PointCluster message from clusters
   autoware_auto_perception_msgs::msg::PointClusters point_clusters;
   convertPointCloudClusters2PointClusters(input_msg->header, clusters, point_clusters);
+  // convertPointCloudClusters2DetectedObjects
+  autoware_auto_perception_msgs::msg::DetectedObjects det_objs;
+  convertPointCloudClusters2DetectedObjects(input_msg->header, clusters, det_objs);
+
   point_clusters_pub_->publish(point_clusters);
+  det_objs_pub_->publish(det_objs);
 }
 }  // namespace euclidean_cluster
 

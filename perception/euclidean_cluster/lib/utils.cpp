@@ -21,6 +21,8 @@
 #include <autoware_auto_perception_msgs/msg/detected_object.hpp>
 #include <autoware_auto_perception_msgs/msg/detected_objects.hpp>
 
+#include <math.h>
+
 namespace euclidean_cluster
 {
 geometry_msgs::msg::Point getCentroid(const sensor_msgs::msg::PointCloud2 & pointcloud)
@@ -128,22 +130,22 @@ void convertPointCloudClusters2DetectedObjects(
     // remove clusters that too large
     if (dimensions.z() > 5.0f || dimensions.z() < 1.0f
       || dimensions.x() > 20.0f || dimensions.y() > 20.0f
-      || dimensions.x() * dimensions.y() / dimensions.z() > 10.0f
+      || dimensions.x() * dimensions.y() > 20.0f
       || detected_object.kinematics.pose_with_covariance.pose.position.z > 5.0f)
       continue;
 
     // create point cloud for bounding box creation
     pcl::PointCloud<pcl::PointXYZ>::Ptr obb_cluster_ptr(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointXYZ pt_no_height;
-    // add points to the point cloud while also removing their z component
-    // this is to prevent non-zero components in roll and pitch
+    pcl::PointXYZ pt_clustered;
+    // add points to the point cloud
     for (const auto & pt : cluster.points)
     {
-      pt_no_height.x = pt.x;
-      pt_no_height.y = pt.y;
-      pt_no_height.z = 0.0f;
-      obb_cluster_ptr->push_back(pt_no_height);
+      pt_clustered.x = pt.x;
+      pt_clustered.y = pt.y;
+      pt_clustered.z = pt.z;
+      obb_cluster_ptr->push_back(pt_clustered);
     }
+
     // compute the centroid for the clustered point cloud
     Eigen::Vector4f pcaCentroid;
     pcl::compute3DCentroid(*obb_cluster_ptr, pcaCentroid);
@@ -190,16 +192,28 @@ void convertPointCloudClusters2DetectedObjects(
 
     // get the bounding box rotation
     geometry_msgs::msg::Quaternion bb_rotation;
-    bb_rotation.x = q_inv.x();
-    bb_rotation.y = q_inv.y();
-    bb_rotation.z = q_inv.z();
-    bb_rotation.w = q_inv.w();
 
+    // compute yaw angle
+    auto euler = q_inv.toRotationMatrix().eulerAngles(2, 1, 0);
+    double yaw = euler[0];
+
+    // restrict yaw angle to [-90, 90]
+    if (yaw * 180.0 / M_PI > 90.0) yaw -= M_PI;
+    if (yaw * 180.0 / M_PI < -90.0) yaw += M_PI;
+
+    // assign the rotation of the bounding box (0, 0, sin(yaw/2), cos(yaw/2))
+    bb_rotation.x = 0.0f;
+    bb_rotation.y = 0.0f;
+    bb_rotation.z = static_cast<float>(sin(yaw / 2.0));
+    bb_rotation.w = static_cast<float>(cos(yaw / 2.0));
+
+    // set default existence_probability
+    detected_object.existence_probability = 1.0f;
     // set the position of the detected object bounding box
     detected_object.kinematics.pose_with_covariance.pose.position = bb_position;
     detected_object.kinematics.has_position_covariance = false;
     detected_object.kinematics.orientation_availability =
-    autoware_auto_perception_msgs::msg::DetectedObjectKinematics::AVAILABLE;
+    autoware_auto_perception_msgs::msg::DetectedObjectKinematics::SIGN_UNKNOWN;
     // set the orientation of the detected object bounding box
     detected_object.kinematics.pose_with_covariance.pose.orientation = bb_rotation;
     detected_object.kinematics.has_twist = false;
@@ -210,16 +224,16 @@ void convertPointCloudClusters2DetectedObjects(
     detected_object.shape.footprint.points.resize(4);
     detected_object.shape.footprint.points[0].x = bb_size(0) / 2.0f;
     detected_object.shape.footprint.points[0].y = bb_size(1) / 2.0f;
-    detected_object.shape.footprint.points[0].z = 0.0f;
+    detected_object.shape.footprint.points[0].z = min_pt.z() - bb_position.z;
     detected_object.shape.footprint.points[1].x = bb_size(0) / 2.0f;
     detected_object.shape.footprint.points[1].y = -bb_size(1) / 2.0f;
-    detected_object.shape.footprint.points[1].z = 0.0f;
+    detected_object.shape.footprint.points[1].z = min_pt.z() - bb_position.z;
     detected_object.shape.footprint.points[2].x = -bb_size(0) / 2.0f;
     detected_object.shape.footprint.points[2].y = -bb_size(1) / 2.0f;
-    detected_object.shape.footprint.points[2].z = 0.0f;
+    detected_object.shape.footprint.points[2].z = min_pt.z() - bb_position.z;
     detected_object.shape.footprint.points[3].x = -bb_size(0) / 2.0f;
     detected_object.shape.footprint.points[3].y = bb_size(1) / 2.0f;
-    detected_object.shape.footprint.points[3].z = 0.0f;
+    detected_object.shape.footprint.points[3].z = min_pt.z() - bb_position.z;
     detected_object.shape.dimensions.x = bb_size(0);
     detected_object.shape.dimensions.y = bb_size(1);
     detected_object.shape.dimensions.z = dimensions.z();

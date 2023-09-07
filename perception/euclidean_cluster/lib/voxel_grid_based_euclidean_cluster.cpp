@@ -33,11 +33,15 @@ VoxelGridBasedEuclideanCluster::VoxelGridBasedEuclideanCluster(
 
 VoxelGridBasedEuclideanCluster::VoxelGridBasedEuclideanCluster(
   bool use_height, int min_cluster_size, int max_cluster_size, float tolerance,
-  float voxel_leaf_size, int min_points_number_per_voxel)
+  float voxel_leaf_size, int min_points_number_per_voxel,
+  float max_x, float min_x, float max_y, float min_y, float max_z, float min_z)
 : EuclideanClusterInterface(use_height, min_cluster_size, max_cluster_size),
   tolerance_(tolerance),
   voxel_leaf_size_(voxel_leaf_size),
-  min_points_number_per_voxel_(min_points_number_per_voxel)
+  min_points_number_per_voxel_(min_points_number_per_voxel),
+  max_x_(max_x), min_x_(min_x),
+  max_y_(max_y), min_y_(min_y),
+  max_z_(max_z), min_z_(min_z)
 {
 }
 
@@ -106,6 +110,14 @@ bool VoxelGridBasedEuclideanCluster::cluster(
             static_cast<int>(cluster.points.size()) <= max_cluster_size_)) {
         continue;
       }
+      Eigen::Vector4f cluster_centroid;
+      pcl::compute3DCentroid(cluster, cluster_centroid);
+      // if (cluster_centroid[0] < min_x_ || cluster_centroid[0] > max_x_ ||
+      //     cluster_centroid[1] < min_y_ || cluster_centroid[1] > max_y_ ||
+      //     cluster_centroid[2] < min_z_ || cluster_centroid[2] > max_z_) {
+      //   std::cerr << cluster_centroid[0] << "-" << cluster_centroid[1] << "-" << cluster_centroid[2] << std::endl;
+      //   continue;
+      // }
       clusters.push_back(cluster);
       clusters.back().width = cluster.points.size();
       clusters.back().height = 1;
